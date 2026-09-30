@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const recommendationController_js_1 = require("../controllers/recommendationController.js");
+const authMiddleware_js_1 = require("../middleware/authMiddleware.js");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_js_1.protect);
+router.get('/', recommendationController_js_1.RecommendationController.getRecommendations);
+router.patch('/:id/status', recommendationController_js_1.RecommendationController.updateStatus);
+exports.default = router;

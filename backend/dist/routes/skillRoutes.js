@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const skillController_js_1 = require("../controllers/skillController.js");
+const authMiddleware_js_1 = require("../middleware/authMiddleware.js");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_js_1.protect);
+router.get('/evidence', skillController_js_1.SkillController.getEvidences);
+router.post('/verify', skillController_js_1.SkillController.verifySkill);
+exports.default = router;
