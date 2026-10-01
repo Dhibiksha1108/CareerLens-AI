@@ -1,4 +1,5 @@
 const TOKEN_KEY = 'careerlens_auth_token';
+const USER_KEY = 'careerlens_auth_user';
 
 export const getAuthToken = (): string | null => {
   try {
@@ -19,6 +20,24 @@ export const setAuthToken = (token: string): void => {
 export const removeAuthToken = (): void => {
   try {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    // ignore
+  }
+};
+
+export const getStoredUser = (): any => {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const setStoredUser = (user: any): void => {
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
   } catch {
     // ignore
   }

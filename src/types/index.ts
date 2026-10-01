@@ -175,18 +175,63 @@ export interface RecommendationRecord {
   status: 'pending' | 'in_progress' | 'completed' | 'dismissed';
 }
 
-export interface CareerRoadmapRecord {
-  _id: string;
-  targetRole: string;
-  stages: Array<{
-    order: number;
-    title: string;
-    description?: string;
-    durationWeeks?: number;
-    status: 'pending' | 'in_progress' | 'completed';
-    tasks: Array<{ id: string; title: string; completed: boolean }>;
-  }>;
+export interface IRoadmapMilestone {
+  description: string;
+  completed: boolean;
+  skillTarget: string;
+  estimatedHours?: number;
+  status?: 'not_started' | 'in_progress' | 'completed';
+}
+
+export interface IRoadmapStage {
+  stage: number;
+  stageLevel: 'beginner' | 'intermediate' | 'advanced';
+  title: string;
+  duration: string;
+  estimatedHours: number;
+  prerequisites: string[];
   skills: string[];
-  recommendedProjects: string[];
-  progress: number;
+  milestones: IRoadmapMilestone[];
+  recommendedProject: {
+    title: string;
+    description: string;
+    keyDeliverables: string[];
+  };
+}
+
+export interface ISkillGap {
+  skill: string;
+  category: string;
+  priority: 'high' | 'medium' | 'low';
+  demandFrequency: number;
+  recommendedLearningArea: string;
+  estimatedHours: number;
+  suggestedProjects: string[];
+  learningResources: Array<{
+    title: string;
+    type: string;
+    level: string;
+    description: string;
+  }>;
+}
+
+export interface CareerRecommendationRecord {
+  _id: string;
+  userId: string;
+  targetRole: string;
+  recommendedRoles: Array<{
+    role: string;
+    matchPercentage: number;
+    matchedSkills: string[];
+    missingSkills: string[];
+    reason: string;
+    skillGaps?: ISkillGap[];
+    roadmap?: IRoadmapStage[];
+  }>;
+  skillGaps: ISkillGap[];
+  roadmap: IRoadmapStage[];
+  overallReadiness: number;
+  sourceJobAnalysisId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
