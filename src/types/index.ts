@@ -103,15 +103,49 @@ export interface ProjectRecord {
 
 export interface JobAnalysisRecord {
   _id: string;
+  userId: string;
+  resumeId?: string;
   jobTitle: string;
   company?: string;
   jobDescription: string;
   requiredSkills: string[];
   matchingSkills: string[];
   missingSkills: string[];
+  extractedJobSkills?: Array<{
+    name: string;
+    category: SkillCategory | string;
+    importance: 'required' | 'preferred';
+  }>;
+  matchedSkillsDetails?: Array<{
+    skill: string;
+    category: SkillCategory | string;
+    proficiencyLevel: 'beginner' | 'intermediate' | 'advanced';
+    evidenceStrength: 'low' | 'medium' | 'high' | 'verified';
+    snippets: string[];
+    tfidfScore?: number;
+    cosineSimilarity?: number;
+  }>;
+  partialSkills?: Array<{
+    jobSkill: string;
+    candidateSkill: string;
+    category: string;
+    relationType: string;
+    reason: string;
+  }>;
+  compatibilityBreakdown?: {
+    skillMatchPercentage: number;
+    textCosineSimilarity: number;
+    finalWeightedScore: number;
+    requiredSkillsCount: number;
+    matchedSkillsCount: number;
+    partialSkillsCount: number;
+    missingSkillsCount: number;
+  };
+  explanation?: string;
+  recommendations?: string[];
   matchResult?: {
     matchPercentage: number;
-    breakdown?: Record<string, number>;
+    breakdown?: Record<string, any>;
     recommendationsSummary?: string;
   };
   createdAt: string;

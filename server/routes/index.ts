@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import authRoutes from './authRoutes.js';
-import userRoutes from './userRoutes.js';
 import resumeRoutes from './resumeRoutes.js';
-import skillsRoutes from './skillsRoutes.js';
+import skillRoutes from './skillRoutes.js';
 import jobRoutes from './jobRoutes.js';
+import userRoutes from './userRoutes.js';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
 router.use('/resume', resumeRoutes);
-router.use('/skills', skillsRoutes);
+router.use('/skills', skillRoutes);
 router.use('/jobs', jobRoutes);
+router.use('/users', userRoutes);
 
 export default router;

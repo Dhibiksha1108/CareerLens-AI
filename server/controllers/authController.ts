@@ -1,47 +1,45 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from '../services/authService.js';
-import { AuthRequest } from '../types/index.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
+import { AuthRequest } from '../types/index.js';
 
 export class AuthController {
-  static async register(req: AuthRequest, res: Response): Promise<void> {
+  static async register(req: Request, res: Response): Promise<void> {
     try {
       const { name, email, password, targetRoles } = req.body;
       if (!name || !email || !password) {
-        sendError(res, 'Name, email, and password are required', null, 400);
+        sendError(res, 'Please provide name, email, and password', null, 400);
         return;
       }
+
       const result = await AuthService.register({ name, email, password, targetRoles });
       sendSuccess(res, 'User registered successfully', result, 201);
-    } catch (error) {
-      sendError(res, (error as Error).message, null, 400);
+    } catch (error: any) {
+      sendError(res, error.message || 'Registration failed', null, 400);
     }
   }
 
-  static async login(req: AuthRequest, res: Response): Promise<void> {
+  static async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
-        sendError(res, 'Email and password are required', null, 400);
+        sendError(res, 'Please provide email and password', null, 400);
         return;
       }
+
       const result = await AuthService.login({ email, password });
-      sendSuccess(res, 'Login successful', result);
-    } catch (error) {
-      sendError(res, (error as Error).message, null, 401);
+      sendSuccess(res, 'Logged in successfully', result);
+    } catch (error: any) {
+      sendError(res, error.message || 'Login failed', null, 401);
     }
   }
 
   static async getMe(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = await AuthService.getProfile(req.user!.userId);
-      sendSuccess(res, 'Current user profile retrieved', user);
-    } catch (error) {
-      sendError(res, (error as Error).message, null, 404);
+      sendSuccess(res, 'Profile retrieved successfully', user);
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to retrieve profile', null, 404);
     }
-  }
-
-  static async logout(_req: AuthRequest, res: Response): Promise<void> {
-    sendSuccess(res, 'Logout successful', null);
   }
 }

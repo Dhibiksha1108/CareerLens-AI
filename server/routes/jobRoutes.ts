@@ -4,10 +4,11 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
+// Protect all job routes
 router.use(protect);
 
-router.post('/analyze', JobController.analyzeJob);
-router.get('/', JobController.getJobs);
-router.get('/:id', JobController.getJobById);
+router.post('/match', JobController.analyzeJobMatch);
+router.get('/matches', JobController.getJobMatches);
+router.get('/matches/:id', JobController.getJobMatchById);
 
 export default router;

@@ -1,83 +1,97 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { AppLayout } from './components/layout/AppLayout';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { AuthPage } from './components/auth/AuthPage';
+import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
+import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ResumePage } from './pages/ResumePage';
 import { SkillsPage } from './pages/SkillsPage';
-import { JobsPage } from './pages/JobsPage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { JobMatchPage } from './pages/JobMatchPage';
+import { RecommendationsPage } from './pages/RecommendationsPage';
+import { CareerRoadmapPage } from './pages/CareerRoadmapPage';
+import { BenchmarkingPage } from './pages/BenchmarkingPage';
+import { ImprovementSimulatorPage } from './pages/ImprovementSimulatorPage';
+import { getAuthToken, setAuthToken, removeAuthToken } from './utils/token';
+import { apiClient } from './services/apiClient';
+import { LoadingSpinner } from './components/common/LoadingSpinner';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, loading } = useAuth();
+export const App: React.FC = () => {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  // Check existing session
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (token) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const AppRoutes: React.FC = () => {
-  return (
-    <Routes>
-      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-
-      <Route
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
+      try {
+        const res = await apiClient.get('/auth/me');
+        if (res.data) {
+          setUser(res.data);
+        } else {
+          removeAuthToken();
         }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/resume" element={<ResumePage />} />
-        <Route path="/skills" element={<SkillsPage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-      </Route>
+      } catch (err) {
+        console.warn('Session verification failed:', err);
+        removeAuthToken();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
-  );
-};
+    checkAuth();
+  }, []);
 
-const App: React.FC = () => {
+  const handleLoginSuccess = (userData: any) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    removeAuthToken();
+    setUser(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Unauthenticated Flow
+  if (!user) {
+    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Authenticated Application Shell with Sidebar Navigation
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <AuthenticatedLayout user={user} onLogout={handleLogout}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<HomePage user={user} />} />
+          <Route path="/home" element={<HomePage user={user} />} />
+          <Route path="/profile" element={<ProfilePage user={user} onUserUpdate={setUser} />} />
+          <Route path="/resume" element={<ResumePage />} />
+          <Route path="/resumes" element={<ResumePage />} />
+          <Route path="/skills" element={<SkillsPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/job-match" element={<JobMatchPage />} />
+          <Route path="/jobs" element={<JobMatchPage />} />
+          <Route path="/match" element={<JobMatchPage />} />
+          <Route path="/recommendations" element={<RecommendationsPage />} />
+          <Route path="/roadmap" element={<CareerRoadmapPage />} />
+          <Route path="/benchmarking" element={<BenchmarkingPage />} />
+          <Route path="/simulator" element={<ImprovementSimulatorPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthenticatedLayout>
     </BrowserRouter>
   );
 };

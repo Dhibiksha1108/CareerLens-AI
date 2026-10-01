@@ -1,12 +1,12 @@
 import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../types/index.js';
 import { verifyToken } from '../utils/jwt.js';
 import { sendError } from '../utils/apiResponse.js';
-import { AuthRequest } from '../types/index.js';
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   let token: string | undefined;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
@@ -17,10 +17,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction): vo
 
   try {
     const decoded = verifyToken(token);
-    req.user = {
-      userId: decoded.userId,
-      email: decoded.email
-    };
+    req.user = decoded;
     next();
   } catch {
     sendError(res, 'Not authorized, token invalid or expired', null, 401);

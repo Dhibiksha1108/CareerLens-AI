@@ -1,10 +1,17 @@
 import React from 'react';
 
-export const LoadingSpinner: React.FC<{ message?: string }> = ({ message }) => {
+export const LoadingSpinner: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'w-4 h-4 border-2',
+    md: 'w-8 h-8 border-3',
+    lg: 'w-12 h-12 border-4'
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center py-16 space-y-3">
-      <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-      {message && <p className="text-xs text-slate-500 font-medium">{message}</p>}
+    <div className="flex items-center justify-center p-6">
+      <div
+        className={`${sizeClasses[size]} border-emerald-200 border-t-emerald-600 rounded-full animate-spin`}
+      />
     </div>
   );
 };

@@ -18,7 +18,6 @@ export const connectDB = async (): Promise<void> => {
     const { MongoMemoryServer } = await import('mongodb-memory-server');
     mongodInstance = await MongoMemoryServer.create({
       instance: {
-        port: 27017,
         dbName: 'careerlens_db'
       }
     });
@@ -29,4 +28,3 @@ export const connectDB = async (): Promise<void> => {
     console.error(`[Database] Error connecting to MongoDB: ${err.message}`);
   }
 };
-

@@ -17,7 +17,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === 'production';
-const PORT = Number(process.env.PORT) || 3000;
+// Dev server in AI Studio must always bind to port 3000 (never 8080 which is reserved for nginx)
+const PORT = 3000;
 
 async function startServer() {
   const app = express();

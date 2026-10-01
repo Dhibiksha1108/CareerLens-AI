@@ -1,17 +1,13 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env.js';
+import { TokenPayload } from '../types/index.js';
 
-export interface JwtPayload {
-  userId: string;
-  email: string;
-}
-
-export const generateToken = (payload: JwtPayload): string => {
+export const generateToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn as any
+    expiresIn: (config.jwtExpiresIn || '7d') as any
   });
 };
 
-export const verifyToken = (token: string): JwtPayload => {
-  return jwt.verify(token, config.jwtSecret) as JwtPayload;
+export const verifyToken = (token: string): TokenPayload => {
+  return jwt.verify(token, config.jwtSecret) as TokenPayload;
 };
