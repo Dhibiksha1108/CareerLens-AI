@@ -1,5 +1,13 @@
 import mongoose from 'mongoose';
-import { CareerRecommendation, ICareerRecommendation, IRecommendedRole, ISkillGap, IRoadmapStage } from '../models/CareerRecommendation.js';
+import {
+  CareerRecommendation,
+  ICareerRecommendation,
+  IRecommendedRole,
+  ISkillGap,
+  IRoadmapStage,
+  IRoadmapMilestone,
+  IPracticalProject
+} from '../models/CareerRecommendation.js';
 import { SkillEvidence } from '../models/SkillEvidence.js';
 import { Resume } from '../models/Resume.js';
 import { JobAnalysis } from '../models/JobAnalysis.js';
@@ -46,11 +54,347 @@ const ROLE_TAXONOMY: Record<string, { skills: string[]; category: string; descri
 
 export class RecommendationService {
   /**
+   * Generates relevant practical projects for a specific skill and target role (Phase 3C)
+   */
+  static getPracticalProjectForSkill(
+    skill: string,
+    roleName: string,
+    difficulty: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate'
+  ): IPracticalProject {
+    const s = skill.toLowerCase();
+
+    // Docker
+    if (s.includes('docker')) {
+      return {
+        title: 'Production Multi-Stage Microservice Containerization',
+        targetSkill: 'Docker',
+        category: 'DevOps & Containers',
+        difficulty,
+        portfolioEvidence: 'Validates ability to author production-hardened Dockerfiles, minimize container footprint with Alpine/distroless multi-stage builds, and orchestrate multi-container local environments with Docker Compose.',
+        estimatedHours: 18,
+        keyDeliverables: [
+          'Multi-stage Dockerfile adhering to non-root security principles',
+          'docker-compose.yml networking client, API, database, and Redis cache',
+          'Automated container health check probes and restart policies'
+        ],
+        architectureOverview: 'Client SPA -> Nginx Reverse Proxy -> Node.js Express API -> PostgreSQL & Redis Volumes'
+      };
+    }
+
+    // Kubernetes
+    if (s.includes('kubernetes')) {
+      return {
+        title: 'Resilient Microservices Orchestration with Kubernetes & Helm',
+        targetSkill: 'Kubernetes',
+        category: 'Cloud & Infrastructure',
+        difficulty: 'Advanced',
+        portfolioEvidence: 'Proves enterprise readiness in configuring Horizontal Pod Autoscalers (HPA), Ingress controllers, declarative Secrets/ConfigMaps, and zero-downtime rolling deployment strategies.',
+        estimatedHours: 24,
+        keyDeliverables: [
+          'K8s Deployment, Service, and Ingress manifests with TLS termination',
+          'ConfigMap and Secret isolation with resource requests/limits',
+          'HPA configuration with CPU and memory utilization thresholds'
+        ],
+        architectureOverview: 'Cluster Ingress -> Service Mesh -> Auto-scaled ReplicaSets -> StatefulSet DB'
+      };
+    }
+
+    // AWS / Cloud
+    if (s.includes('aws') || s.includes('cloud')) {
+      return {
+        title: 'Serverless Event-Driven Infrastructure on AWS',
+        targetSkill: 'AWS',
+        category: 'Cloud Computing',
+        difficulty,
+        portfolioEvidence: 'Demonstrates practical competence in architecting scalable serverless pipelines using AWS Lambda, S3, SQS/SNS, and DynamoDB with IAM least-privilege policies.',
+        estimatedHours: 20,
+        keyDeliverables: [
+          'Event-driven AWS Lambda ingestion pipeline triggered by S3 bucket events',
+          'SQS dead-letter queues handling transient downstream processing failures',
+          'CloudWatch dashboards with custom error rate and latency alarms'
+        ],
+        architectureOverview: 'S3 Event -> SQS Queue -> Lambda Worker -> DynamoDB -> CloudWatch Metrics'
+      };
+    }
+
+    // Terraform
+    if (s.includes('terraform')) {
+      return {
+        title: 'Infrastructure-as-Code AWS VPC & Cluster Automation',
+        targetSkill: 'Terraform',
+        category: 'Infrastructure as Code',
+        difficulty: 'Advanced',
+        portfolioEvidence: 'Validates proficiency with modular HCL, remote S3 state management with DynamoDB state locking, and multi-environment reproducible cloud provisioning.',
+        estimatedHours: 22,
+        keyDeliverables: [
+          'Modular Terraform modules for multi-AZ VPC, subnets, and NAT gateways',
+          'Remote S3 backend with DynamoDB state locking for team concurrency',
+          'CI/CD terraform plan/apply validation with automated linting'
+        ],
+        architectureOverview: 'Git PR -> GitHub Actions Terraform Plan -> AWS VPC & EKS Cluster Provisioning'
+      };
+    }
+
+    // CI/CD
+    if (s.includes('ci/cd') || s.includes('actions') || s.includes('pipeline')) {
+      return {
+        title: 'Automated Enterprise CI/CD Pipeline with GitHub Actions',
+        targetSkill: 'CI/CD',
+        category: 'DevOps & Automation',
+        difficulty,
+        portfolioEvidence: 'Shows employers you can construct resilient deployment pipelines with branch protection, matrix testing, security vulnerability scanning, and automated artifact publishing.',
+        estimatedHours: 16,
+        keyDeliverables: [
+          'GitHub Actions workflow running linting, unit tests, and coverage enforcement',
+          'Automated Docker build, security vulnerability scanning (Trivy), and registry push',
+          'Automated staging deployment with rollback triggers on healthcheck failure'
+        ],
+        architectureOverview: 'Git Push -> Matrix Test -> Trivy Scan -> Docker Registry -> Staging Deploy'
+      };
+    }
+
+    // Apache Spark
+    if (s.includes('spark')) {
+      return {
+        title: 'Distributed Big Data Lakehouse Pipeline with PySpark',
+        targetSkill: 'Apache Spark',
+        category: 'Big Data & Distributed Computing',
+        difficulty: 'Advanced',
+        portfolioEvidence: 'Exhibits ability to process multi-gigabyte analytical datasets using distributed DataFrame transformations, partitioning, caching, and Parquet storage optimization.',
+        estimatedHours: 25,
+        keyDeliverables: [
+          'PySpark data transformation script with window functions and schema enforcement',
+          'Partitioned columnar Parquet data warehouse tables optimized for querying',
+          'Spark benchmark report demonstrating shuffle optimization and broadcast joins'
+        ],
+        architectureOverview: 'Raw Log Ingestion -> PySpark Distributed Processing -> Partitioned Parquet Lakehouse'
+      };
+    }
+
+    // Kafka
+    if (s.includes('kafka')) {
+      return {
+        title: 'Real-Time Event Streaming & Ingestion Architecture with Kafka',
+        targetSkill: 'Kafka',
+        category: 'Distributed Messaging',
+        difficulty: 'Advanced',
+        portfolioEvidence: 'Demonstrates practical knowledge of decoupled pub/sub message brokers, consumer group offset management, backpressure control, and schema serialization.',
+        estimatedHours: 22,
+        keyDeliverables: [
+          'High-throughput producer publishing simulated sensor telemetry with JSON schema',
+          'Consumer group workers processing partitions concurrently with idempotency',
+          'Dead-letter topic handling schema validation and parsing anomalies'
+        ],
+        architectureOverview: 'Producer Client -> Kafka Topic Partitioning -> Consumer Workers -> TimescaleDB'
+      };
+    }
+
+    // Airflow
+    if (s.includes('airflow')) {
+      return {
+        title: 'Orchestrated Multi-Stage Data Pipeline with Apache Airflow',
+        targetSkill: 'Airflow',
+        category: 'Workflow Orchestration',
+        difficulty,
+        portfolioEvidence: 'Shows mastery of declarative DAG modeling, task dependencies, idempotent retries, backfilling, and operational alerting for enterprise ETL pipelines.',
+        estimatedHours: 20,
+        keyDeliverables: [
+          'Declarative Airflow DAG with custom Python operators and Postgres sensors',
+          'SLA and retry policies with automated Slack/Email alert integration',
+          'Docker Compose stack running Airflow Webserver, Scheduler, and Worker'
+        ],
+        architectureOverview: 'Airflow Scheduler -> Extraction DAG -> Data Cleansing Task -> Warehouse Load'
+      };
+    }
+
+    // Power BI
+    if (s.includes('power bi')) {
+      return {
+        title: 'Executive Sales & Cohort Retention Intelligence Dashboard',
+        targetSkill: 'Power BI',
+        category: 'Business Intelligence',
+        difficulty,
+        portfolioEvidence: 'Proves ability to construct interactive executive dashboards with star-schema data models, complex DAX calculations, and dynamic drill-through filters.',
+        estimatedHours: 18,
+        keyDeliverables: [
+          'Star-schema dimensional data model connecting Fact tables with Date/Product dims',
+          'Dynamic DAX measures for Year-over-Year revenue growth and customer retention rates',
+          'Interactive executive summary with drill-through detail views and custom slicers'
+        ],
+        architectureOverview: 'Relational SQL Source -> Dimensional Star Schema -> Interactive Power BI Dashboard'
+      };
+    }
+
+    // Tableau
+    if (s.includes('tableau')) {
+      return {
+        title: 'Strategic Executive Business Intelligence Storyboard in Tableau',
+        targetSkill: 'Tableau',
+        category: 'Data Visualization & BI',
+        difficulty: 'Advanced',
+        portfolioEvidence: 'Demonstrates expert visual storytelling, Level of Detail (LOD) expressions, parameter actions, and responsive layout formatting.',
+        estimatedHours: 18,
+        keyDeliverables: [
+          'Interactive Tableau workbook with LOD expressions for cohort calculations',
+          'Parameter actions enabling user-driven metric toggling and scenario testing',
+          'Comprehensive executive presentation deck interpreting business drivers'
+        ],
+        architectureOverview: 'Clean Analytical Dataset -> Tableau Data Engine -> Interactive Executive Storyboard'
+      };
+    }
+
+    // Machine Learning / Scikit-learn / PyTorch / TensorFlow
+    if (s.includes('machine learning') || s.includes('scikit') || s.includes('tensorflow') || s.includes('pytorch')) {
+      return {
+        title: 'End-to-End Customer Churn Prediction & Scoring API',
+        targetSkill: skill,
+        category: 'Applied Machine Learning',
+        difficulty: 'Intermediate',
+        portfolioEvidence: 'Validates proficiency across the entire ML lifecycle: exploratory feature engineering, model selection, hyperparameter tuning, and REST API inference serving.',
+        estimatedHours: 22,
+        keyDeliverables: [
+          'Jupyter Notebook with exploratory feature engineering and class imbalance handling',
+          'Trained classification model evaluated with ROC-AUC and precision-recall metrics',
+          'FastAPI microservice serving real-time churn prediction probabilities'
+        ],
+        architectureOverview: 'Customer Data -> Feature Pipeline -> Trained Model -> FastAPI Scoring Endpoint'
+      };
+    }
+
+    // PostgreSQL / MongoDB / SQL
+    if (s.includes('postgres') || s.includes('mongo') || s.includes('sql')) {
+      return {
+        title: 'High-Concurrency Database Architecture & Query Optimization',
+        targetSkill: skill,
+        category: 'Database Architecture',
+        difficulty,
+        portfolioEvidence: 'Demonstrates advanced database competence: complex joins/aggregations, compound indexing, query execution plan tuning (EXPLAIN ANALYZE), and transactional integrity.',
+        estimatedHours: 18,
+        keyDeliverables: [
+          'Normalized relational schema or document model with indexing strategies',
+          'Query execution benchmark comparing performance before and after compound indexing',
+          'Transactional operations with atomic commits and optimistic concurrency control'
+        ],
+        architectureOverview: 'Application Tier -> Connection Pool -> Database Engine with Compound Indexes'
+      };
+    }
+
+    // React / Next.js / TypeScript
+    if (s.includes('react') || s.includes('next') || s.includes('typescript')) {
+      return {
+        title: 'Type-Safe Reactive Dashboard with Component Design System',
+        targetSkill: skill,
+        category: 'Frontend Engineering',
+        difficulty,
+        portfolioEvidence: 'Proves ability to engineer scalable client applications with strict type safety, modular component architecture, accessible UI design, and responsive layouts.',
+        estimatedHours: 20,
+        keyDeliverables: [
+          'Accessible component library styled with Tailwind CSS and responsive design',
+          'Custom React hooks for asynchronous data fetching, caching, and state synchronization',
+          'End-to-end form workflows with Zod schema validation and error boundaries'
+        ],
+        architectureOverview: 'React Custom Hooks -> Tailwind Components -> Type-Safe API Client'
+      };
+    }
+
+    // Node.js / Express
+    if (s.includes('node') || s.includes('express')) {
+      return {
+        title: 'Resilient RESTful Microservice with Authentication & Rate Limiting',
+        targetSkill: skill,
+        category: 'Backend & Systems',
+        difficulty,
+        portfolioEvidence: 'Shows employers you can construct production-ready APIs with JWT authentication, role-based access control, input validation, and structured error handling.',
+        estimatedHours: 18,
+        keyDeliverables: [
+          'REST API endpoints with JWT auth middleware and role-based permissions',
+          'Input sanitization and request schema validation with informative error payloads',
+          'Redis token-bucket rate limiting protecting against denial-of-service abuse'
+        ],
+        architectureOverview: 'Client Request -> Rate Limiter -> JWT Auth Middleware -> Controller -> Database'
+      };
+    }
+
+    // Python / Pandas / Statistics / EDA
+    if (s.includes('pandas') || s.includes('python') || s.includes('statistics') || s.includes('eda')) {
+      return {
+        title: 'Automated Exploratory Data Analysis & Statistical Profiling Engine',
+        targetSkill: skill,
+        category: 'Data Science & Analysis',
+        difficulty,
+        portfolioEvidence: 'Demonstrates mastery of multivariate hypothesis testing, statistical distribution analysis, data wrangling with Pandas, and actionable insight synthesis.',
+        estimatedHours: 16,
+        keyDeliverables: [
+          'Python data wrangling script cleaning multi-source messy survey or sales records',
+          'Statistical profiling module calculating correlation matrices and significance tests',
+          'Markdown / HTML analytical report summarizing statistical findings and charts'
+        ],
+        architectureOverview: 'Disparate Datasets -> Pandas Cleansing Pipeline -> Statistical Profiling -> Executive Report'
+      };
+    }
+
+    // Linux / Networking / Git
+    if (s.includes('linux') || s.includes('network') || s.includes('git')) {
+      return {
+        title: 'Automated Server Hardening & Infrastructure Telemetry Daemon',
+        targetSkill: skill,
+        category: 'Systems & Administration',
+        difficulty: 'Beginner',
+        portfolioEvidence: 'Shows command of Linux POSIX administration, systemd service management, secure SSH configuration, and automated Bash/Python administration tooling.',
+        estimatedHours: 14,
+        keyDeliverables: [
+          'Automated server provisioning script enforcing firewall and SSH hardening',
+          'Systemd daemon monitoring process memory thresholds and streaming log alerts',
+          'Git repository with branch protection rules and reproducible setup scripts'
+        ],
+        architectureOverview: 'Linux Kernel -> Systemd Daemon -> Bash/Python Health Probe -> Alert Webhook'
+      };
+    }
+
+    // Default Fallback
+    return {
+      title: `Hands-on ${skill} Production Verification Project for ${roleName}`,
+      targetSkill: skill,
+      category: 'Specialized Implementation',
+      difficulty,
+      portfolioEvidence: `Validates practical capability to implement and deploy production-grade solutions using ${skill} within modern ${roleName} environments.`,
+      estimatedHours: 16,
+      keyDeliverables: [
+        `Modular architecture blueprint incorporating industry best practices for ${skill}`,
+        `Comprehensive test suite validating functional requirements and edge cases`,
+        `README documentation detailing setup, configuration, and architecture trade-offs`
+      ],
+      architectureOverview: `Domain Client -> ${skill} Service Layer -> Persistence & Observability`
+    };
+  }
+
+  /**
    * Retrieves or computes recommendations for the user
    */
   static async getRecommendations(userId: string): Promise<ICareerRecommendation> {
     const existing = await CareerRecommendation.findOne({ userId }).sort({ updatedAt: -1 });
     if (existing) {
+      let needsSave = false;
+      for (const r of existing.recommendedRoles) {
+        if (!r.roadmap || r.roadmap.length === 0) {
+          r.roadmap = RecommendationService.generateRoleRoadmap(
+            r.role,
+            r.missingSkills || [],
+            r.matchedSkills || []
+          );
+          needsSave = true;
+        }
+        if (!r.practicalProjects || r.practicalProjects.length === 0) {
+          r.practicalProjects = (r.missingSkills || []).map(skill =>
+            RecommendationService.getPracticalProjectForSkill(skill, r.role, 'Intermediate')
+          );
+          needsSave = true;
+        }
+      }
+      if (needsSave) {
+        existing.markModified('recommendedRoles');
+        await existing.save();
+      }
       return existing;
     }
     return await this.generateRecommendations(userId);
@@ -141,13 +485,17 @@ export class RecommendationService {
         reason = `Growth pathway (${matchPercentage}%). Requires targeted development in ${missing.slice(0, 3).join(', ')}.`;
       }
 
-      // Generate role-specific skill gaps tailored to this role's missing skills
+      // Generate role-specific skill gaps tailored to this role's missing skills (Phase 2D + 3C)
       const roleSkillGaps: ISkillGap[] = missing.map((skill, mIdx) => {
         const isCoreRoleReq = roleData.skills.slice(0, 3).some(s => s.toLowerCase() === skill.toLowerCase());
         const freq = missingSkillsFreq[skill] || 1;
         const priority: 'high' | 'medium' | 'low' = isCoreRoleReq || mIdx < 2 ? 'high' : mIdx < 4 ? 'medium' : 'low';
         const area = this.determineLearningArea(skill);
-        const projects = this.suggestProjectsForSkill(skill, roleName);
+        const practicalProj = RecommendationService.getPracticalProjectForSkill(
+          skill,
+          roleName,
+          priority === 'high' ? 'Intermediate' : 'Beginner'
+        );
 
         return {
           skill,
@@ -156,7 +504,8 @@ export class RecommendationService {
           demandFrequency: Math.ceil(freq),
           recommendedLearningArea: area.description,
           estimatedHours: priority === 'high' ? 30 : priority === 'medium' ? 20 : 12,
-          suggestedProjects: projects,
+          suggestedProjects: [practicalProj.title],
+          practicalProjects: [practicalProj],
           learningResources: [
             {
               title: `Hands-on ${skill} Mastery for ${roleName}`,
@@ -175,6 +524,7 @@ export class RecommendationService {
       });
 
       const roleRoadmap = RecommendationService.generateRoleRoadmap(roleName, missing, matched);
+      const rolePracticalProjects = roleSkillGaps.flatMap(g => g.practicalProjects || []);
 
       recommendedRoles.push({
         role: roleName,
@@ -183,7 +533,8 @@ export class RecommendationService {
         missingSkills: missing,
         reason,
         skillGaps: roleSkillGaps,
-        roadmap: roleRoadmap
+        roadmap: roleRoadmap,
+        practicalProjects: rolePracticalProjects
       });
     });
 
@@ -205,7 +556,11 @@ export class RecommendationService {
       }
 
       const area = this.determineLearningArea(skill);
-      const projects = this.suggestProjectsForSkill(skill);
+      const practicalProj = RecommendationService.getPracticalProjectForSkill(
+        skill,
+        targetRole,
+        priority === 'high' ? 'Intermediate' : 'Beginner'
+      );
 
       return {
         skill,
@@ -214,7 +569,8 @@ export class RecommendationService {
         demandFrequency: Math.ceil(freq),
         recommendedLearningArea: area.description,
         estimatedHours: priority === 'high' ? 30 : priority === 'medium' ? 20 : 12,
-        suggestedProjects: projects,
+        suggestedProjects: [practicalProj.title],
+        practicalProjects: [practicalProj],
         learningResources: [
           {
             title: `Hands-on ${skill} Mastery Guide`,
@@ -231,29 +587,6 @@ export class RecommendationService {
         ]
       };
     });
-
-    // If no missing skills detected, supply defaults for target role
-    if (skillGaps.length === 0) {
-      ['Machine Learning', 'Statistics', 'Docker', 'Cloud Deployment'].forEach(s => {
-        skillGaps.push({
-          skill: s,
-          category: 'Core Competency',
-          priority: 'medium',
-          demandFrequency: 1,
-          recommendedLearningArea: `Foundations of ${s}`,
-          estimatedHours: 20,
-          suggestedProjects: [`Implement a modular ${s} demo project`],
-          learningResources: [
-            {
-              title: `${s} Essentials`,
-              type: 'Course & Lab',
-              level: 'Intermediate',
-              description: `Deep-dive guide into ${s}.`
-            }
-          ]
-        });
-      });
-    }
 
     // 5. Default Primary Target Role Roadmap (3-tier Beginner -> Intermediate -> Advanced)
     const primaryRole = recommendedRoles.find(r => r.role.toLowerCase() === targetRole.toLowerCase()) || recommendedRoles[0];
@@ -282,7 +615,7 @@ export class RecommendationService {
   }
 
   /**
-   * Generates a 3-Stage Beginner -> Intermediate -> Advanced Roadmap for a given role
+   * Generates a 3-Stage Beginner -> Intermediate -> Advanced Roadmap for a given role (Phase 3A, 3B, 3C)
    */
   static generateRoleRoadmap(
     roleName: string,
@@ -333,8 +666,14 @@ export class RecommendationService {
                 'TypeScript configuration with strict type checking enabled',
                 'Zod or schema validation for incoming JSON responses',
                 'Comprehensive unit tests using Vitest or Jest'
-              ]
-            }
+              ],
+              targetSkill: 'TypeScript & Git',
+              portfolioEvidence: 'Proves to engineering managers that you write maintainable, type-safe code with automated testing and standard CLI architecture.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('TypeScript', roleName, 'Beginner'),
+              RecommendationService.getPracticalProjectForSkill('Git', roleName, 'Beginner')
+            ]
           },
           {
             stage: 2,
@@ -374,8 +713,14 @@ export class RecommendationService {
                 'React frontend with clean Tailwind CSS component design',
                 'Node/Express backend with JWT auth middleware and error handling',
                 'Database models with indexing and aggregation queries'
-              ]
-            }
+              ],
+              targetSkill: 'React, Node.js & Express',
+              portfolioEvidence: 'Demonstrates end-to-end full stack execution: client-state synchronization, secure authentication, and resilient API contracts.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('React', roleName, 'Intermediate'),
+              RecommendationService.getPracticalProjectForSkill('Node.js', roleName, 'Intermediate')
+            ]
           },
           {
             stage: 3,
@@ -415,8 +760,14 @@ export class RecommendationService {
                 'Docker multi-stage build configurations with non-root security',
                 'GitHub Actions workflow running linting, test suites, and automated build',
                 'Live deployed application with public URL and API health checks'
-              ]
-            }
+              ],
+              targetSkill: 'Docker & CI/CD',
+              portfolioEvidence: 'Provides verifiable proof of DevOps readiness: immutable containers, automated testing gates, and production container networking.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Docker', roleName, 'Advanced'),
+              RecommendationService.getPracticalProjectForSkill('CI/CD', roleName, 'Advanced')
+            ]
           }
         ];
 
@@ -460,8 +811,14 @@ export class RecommendationService {
                 'Automated health check scripts with configurable alert triggers',
                 'Systemd daemon service configuration and logging',
                 'Documented setup guide and reproducible execution scripts'
-              ]
-            }
+              ],
+              targetSkill: 'Linux & Python',
+              portfolioEvidence: 'Proves sysadmin fundamentals: system-level scripting, daemon lifecycle, and automated health monitoring.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Linux', roleName, 'Beginner'),
+              RecommendationService.getPracticalProjectForSkill('Git', roleName, 'Beginner')
+            ]
           },
           {
             stage: 2,
@@ -501,8 +858,14 @@ export class RecommendationService {
                 'Dockerfile with multi-stage build optimization and vulnerability scanning',
                 'Automated GitHub Actions workflow publishing to container registry',
                 'AWS cloud configuration documentation with security groups'
-              ]
-            }
+              ],
+              targetSkill: 'Docker & AWS',
+              portfolioEvidence: 'Showcases container build automation, registry integration, and cloud workload provisioning.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Docker', roleName, 'Intermediate'),
+              RecommendationService.getPracticalProjectForSkill('AWS', roleName, 'Intermediate')
+            ]
           },
           {
             stage: 3,
@@ -542,8 +905,14 @@ export class RecommendationService {
                 'Modular Terraform code provisioning VPC, subnets, and Kubernetes cluster',
                 'Kubernetes manifests with ConfigMaps, Secrets, Ingress, and Autoscaler',
                 'Architecture diagram detailing zero-downtime rolling update strategy'
-              ]
-            }
+              ],
+              targetSkill: 'Kubernetes & Terraform',
+              portfolioEvidence: 'Validates senior-level infrastructure mastery: codified environments, production cluster management, and automated scaling.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Kubernetes', roleName, 'Advanced'),
+              RecommendationService.getPracticalProjectForSkill('Terraform', roleName, 'Advanced')
+            ]
           }
         ];
 
@@ -587,8 +956,14 @@ export class RecommendationService {
                 'Idempotent ingestion scripts with data type validation',
                 'PostgreSQL relational schema with foreign keys and compound indexes',
                 'Unit tests verifying edge-case data cleansing'
-              ]
-            }
+              ],
+              targetSkill: 'SQL & PostgreSQL',
+              portfolioEvidence: 'Proves schema modeling accuracy, data typing enforcement, and idempotent batch ingestion.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('SQL', roleName, 'Beginner'),
+              RecommendationService.getPracticalProjectForSkill('Python', roleName, 'Beginner')
+            ]
           },
           {
             stage: 2,
@@ -628,8 +1003,14 @@ export class RecommendationService {
                 'Modular Airflow DAG code with custom operators and sensors',
                 'Dimensional star-schema models with fact and dimension tables',
                 'Docker Compose stack running Airflow scheduler, webserver, and database'
-              ]
-            }
+              ],
+              targetSkill: 'Airflow & ETL',
+              portfolioEvidence: 'Demonstrates enterprise data engineering: dependency DAGs, dimensional modeling, and scheduled task monitoring.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Airflow', roleName, 'Intermediate'),
+              RecommendationService.getPracticalProjectForSkill('Docker', roleName, 'Intermediate')
+            ]
           },
           {
             stage: 3,
@@ -669,8 +1050,14 @@ export class RecommendationService {
                 'Kafka producer/consumer pipelines with JSON schema validation',
                 'PySpark structured streaming script aggregating windowed metrics',
                 'System architecture diagrams and throughput benchmark metrics'
-              ]
-            }
+              ],
+              targetSkill: 'Apache Spark & Kafka',
+              portfolioEvidence: 'Confirms ability to engineer high-throughput real-time event pipelines and distributed storage lakes.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Apache Spark', roleName, 'Advanced'),
+              RecommendationService.getPracticalProjectForSkill('Kafka', roleName, 'Advanced')
+            ]
           }
         ];
 
@@ -715,8 +1102,14 @@ export class RecommendationService {
                 'Documented SQL queries extracting customer transaction cohorts',
                 'Descriptive statistical summary report with distribution histograms',
                 'Clean GitHub repository with reproducible dataset instructions'
-              ]
-            }
+              ],
+              targetSkill: 'SQL & Statistics',
+              portfolioEvidence: 'Proves quantitative reasoning, accurate SQL aggregations, and data distribution profiling.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('SQL', roleName, 'Beginner'),
+              RecommendationService.getPracticalProjectForSkill('Statistics', roleName, 'Beginner')
+            ]
           },
           {
             stage: 2,
@@ -756,8 +1149,14 @@ export class RecommendationService {
                 'Clean star-schema data model with calendar and product dimensions',
                 'Dynamic DAX measures calculating Year-over-Year growth and retention rate',
                 'Executive summary slide deck interpreting strategic takeaways'
-              ]
-            }
+              ],
+              targetSkill: 'Power BI & Pandas',
+              portfolioEvidence: 'Demonstrates business acumen, DAX modeling, and visual communication tailored to non-technical stakeholders.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Power BI', roleName, 'Intermediate'),
+              RecommendationService.getPracticalProjectForSkill('Pandas', roleName, 'Intermediate')
+            ]
           },
           {
             stage: 3,
@@ -797,15 +1196,21 @@ export class RecommendationService {
                 'Predictive classification notebook in Python with ROC-AUC evaluation',
                 'Interactive Tableau or Power BI dashboard highlighting high-risk segments',
                 'Executive report recommending retention interventions with ROI modeling'
-              ]
-            }
+              ],
+              targetSkill: 'Tableau & Machine Learning',
+              portfolioEvidence: 'Validates senior analytical skills: predictive modeling, A/B testing experimental rigor, and executive storytelling.'
+            },
+            practicalProjects: [
+              RecommendationService.getPracticalProjectForSkill('Tableau', roleName, 'Advanced'),
+              RecommendationService.getPracticalProjectForSkill('Machine Learning', roleName, 'Advanced')
+            ]
           }
         ];
     }
   }
 
   /**
-   * Updates milestone completion status
+   * Updates milestone completion status and syncs state
    */
   static async updateMilestoneStatus(
     userId: string,
@@ -895,68 +1300,5 @@ export class RecommendationService {
       category: 'Specialized Technical Competency',
       description: `Targeted implementation patterns and best practices for ${skill}.`
     };
-  }
-
-  private static suggestProjectsForSkill(skill: string, roleName?: string): string[] {
-    const s = skill.toLowerCase();
-    const r = (roleName || '').toLowerCase();
-
-    // DevOps / Cloud
-    if (s.includes('kubernetes')) {
-      return ['Production Kubernetes Cluster with Ingress & Helm', 'Self-Healing Pod Autoscaling Deployment'];
-    }
-    if (s.includes('docker')) {
-      return ['Multi-Stage Docker Microservices Containerization', 'Docker Compose Local Distributed Dev Environment'];
-    }
-    if (s.includes('terraform')) {
-      return ['Infrastructure-as-Code AWS VPC & EKS Cluster', 'Automated Multi-Environment Terraform State Pipeline'];
-    }
-    if (s.includes('ci/cd') || s.includes('actions')) {
-      return ['GitHub Actions CI/CD Pipeline with Testing & Security Scanning', 'Zero-Downtime Blue/Green Deployment Workflow'];
-    }
-    if (s.includes('aws') || s.includes('cloud')) {
-      return ['Serverless Event Processor on AWS Lambda, S3 & SQS', 'Secure Multi-AZ Web Tier with RDS & Auto Scaling'];
-    }
-
-    // Data Engineering
-    if (s.includes('spark')) {
-      return ['Distributed Log Ingestion & Aggregation with Apache Spark', 'PySpark Parquet ETL Pipeline on Cloud Storage'];
-    }
-    if (s.includes('kafka')) {
-      return ['Real-Time Sensor Event Stream Pipeline with Kafka', 'High-Throughput Pub/Sub Message Queue Architecture'];
-    }
-    if (s.includes('airflow')) {
-      return ['Automated Multi-Stage ETL Pipeline DAGs with Airflow', 'Scheduled Data Pipeline Monitoring & Slack Alerting'];
-    }
-    if (s.includes('data warehouse') || s.includes('snowflake')) {
-      return ['Dimensional Modeling & Star Schema Analytics Warehouse', 'Snowflake Snowpipe Automated Ingestion Pipeline'];
-    }
-
-    // Full Stack & Web
-    if (s.includes('react') || s.includes('next')) {
-      return ['Interactive Responsive Analytics Dashboard in React', 'Modern Server-Side Rendered Web App with Next.js'];
-    }
-    if (s.includes('typescript')) {
-      return ['Strictly-Typed Full-Stack Application with Shared Types', 'Type-Safe REST API Client with Zod Validation'];
-    }
-    if (s.includes('node') || s.includes('express')) {
-      return ['Resilient RESTful Microservice with Authentication & Rate Limiting', 'Real-Time WebSocket Notification Service'];
-    }
-    if (s.includes('mongo') || s.includes('postgres') || s.includes('sql')) {
-      return ['Optimized Database Schema with Indexing & Transactions', 'High-Concurrency Data Ingestion & Caching Layer'];
-    }
-
-    // Data & Machine Learning
-    if (s.includes('machine learning')) {
-      return ['Predictive Customer Churn Classifier Pipeline', 'Automated NLP Entity Extraction Service'];
-    }
-    if (s.includes('power bi') || s.includes('tableau')) {
-      return ['Executive Sales & Inventory Intelligence Dashboard', 'Customer Retention Cohort Analysis with Interactive Slicers'];
-    }
-    if (s.includes('statistics') || s.includes('eda')) {
-      return ['Exploratory Multivariate Hypothesis Testing & EDA Report', 'Statistical A/B Testing Experimentation Framework'];
-    }
-
-    return [`Production ${skill} Implementation for ${roleName || 'Production'}`, `Hands-on ${skill} Verification Module`];
   }
 }

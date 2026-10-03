@@ -175,6 +175,17 @@ export interface RecommendationRecord {
   status: 'pending' | 'in_progress' | 'completed' | 'dismissed';
 }
 
+export interface IPracticalProject {
+  title: string;
+  targetSkill: string;
+  category: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  portfolioEvidence: string;
+  estimatedHours: number;
+  keyDeliverables: string[];
+  architectureOverview?: string;
+}
+
 export interface IRoadmapMilestone {
   description: string;
   completed: boolean;
@@ -196,7 +207,10 @@ export interface IRoadmapStage {
     title: string;
     description: string;
     keyDeliverables: string[];
+    targetSkill?: string;
+    portfolioEvidence?: string;
   };
+  practicalProjects?: IPracticalProject[];
 }
 
 export interface ISkillGap {
@@ -207,6 +221,7 @@ export interface ISkillGap {
   recommendedLearningArea: string;
   estimatedHours: number;
   suggestedProjects: string[];
+  practicalProjects?: IPracticalProject[];
   learningResources: Array<{
     title: string;
     type: string;
@@ -227,6 +242,7 @@ export interface CareerRecommendationRecord {
     reason: string;
     skillGaps?: ISkillGap[];
     roadmap?: IRoadmapStage[];
+    practicalProjects?: IPracticalProject[];
   }>;
   skillGaps: ISkillGap[];
   roadmap: IRoadmapStage[];
@@ -234,4 +250,85 @@ export interface CareerRecommendationRecord {
   sourceJobAnalysisId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ISimulatedCertification {
+  id: string;
+  name: string;
+  issuer: string;
+  relatedSkills: string[];
+  estimatedHours: number;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface ISimulatedPortfolioEvidence {
+  id: string;
+  title: string;
+  type: 'github_repo' | 'live_deployment' | 'technical_case_study' | 'benchmark_report';
+  targetSkill: string;
+  estimatedHours: number;
+  description: string;
+  evidenceValue: string;
+}
+
+export interface IAtsSectionAnalysis {
+  name: string;
+  found: boolean;
+  status: 'optimal' | 'warning' | 'missing';
+  feedback: string;
+}
+
+export interface IAtsFormattingRisk {
+  type: string;
+  severity: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  recommendation: string;
+}
+
+export interface IBulletPointAnalysis {
+  totalBullets: number;
+  strongBullets: number;
+  weakBullets: number;
+  actionVerbsCount: number;
+  metricsCount: number;
+  score: number;
+  sampleStrengths: string[];
+  sampleWeaknesses: string[];
+  recommendation: string;
+}
+
+export interface IAtsAnalysisResult {
+  resumeId: string;
+  targetRole: string;
+  analyzedAt: string;
+  atsScore: number;
+  keywordMatchPercentage: number;
+  relevantSkillsDetected: string[];
+  missingKeywords: Array<{
+    keyword: string;
+    priority: 'high' | 'medium' | 'low';
+    frequencyInRole: number;
+    category: string;
+  }>;
+  sectionsAnalysis: IAtsSectionAnalysis[];
+  formattingRisks: IAtsFormattingRisk[];
+  readabilityScore: number;
+  readabilityLevel: 'Very Easy' | 'Easy' | 'Fairly Easy' | 'Standard' | 'Fairly Difficult' | 'Difficult';
+  contentClarityScore: number;
+  contentClaritySummary: string;
+  bulletQuality: IBulletPointAnalysis;
+  repetitionAnalysis: {
+    overusedWords: Array<{ word: string; count: number }>;
+    fillerPhrasesFound: string[];
+    repetitionScore: number;
+  };
+  strengths: string[];
+  improvementSuggestions: Array<{
+    category: 'Keywords' | 'Formatting' | 'Content' | 'Impact' | 'Sections';
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    actionableFix: string;
+  }>;
 }

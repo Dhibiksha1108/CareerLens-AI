@@ -41,4 +41,24 @@ export class RecommendationController {
       sendError(res, error.message || 'Failed to update milestone status', null, 500);
     }
   }
+
+  static async updateProject(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { projectId, completed, roleName, status } = req.body;
+      if (!projectId || typeof completed !== 'boolean') {
+        sendError(res, 'projectId and completed (boolean) are required', null, 400);
+        return;
+      }
+      const rec = await RecommendationService.updateProjectStatus(
+        req.user!.userId,
+        projectId,
+        completed,
+        roleName,
+        status
+      );
+      sendSuccess(res, 'Project status updated successfully', rec);
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to update project status', null, 500);
+    }
+  }
 }

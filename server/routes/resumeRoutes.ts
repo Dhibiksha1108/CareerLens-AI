@@ -9,6 +9,9 @@ router.use(protect);
 
 router.post('/upload', uploadResumeSingle, ResumeController.uploadResume);
 router.get('/me', ResumeController.getMyResumes);
+router.post('/ats/analyze', ResumeController.analyzeAts);
+router.get('/:id/ats', ResumeController.getAtsAnalysis);
+router.post('/:id/ats', ResumeController.analyzeAts);
 router.get('/:id/analysis', ResumeController.getResumeAnalysis);
 router.post('/:id/analyze', ResumeController.analyzeResume);
 router.get('/:id', ResumeController.getResumeById);

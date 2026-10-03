@@ -12,6 +12,7 @@ import { RecommendationsPage } from './pages/RecommendationsPage';
 import { CareerRoadmapPage } from './pages/CareerRoadmapPage';
 import { BenchmarkingPage } from './pages/BenchmarkingPage';
 import { ImprovementSimulatorPage } from './pages/ImprovementSimulatorPage';
+import { AtsAnalyzerPage } from './pages/AtsAnalyzerPage';
 import { getAuthToken, setAuthToken, removeAuthToken } from './utils/token';
 import { apiClient } from './services/apiClient';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
@@ -80,6 +81,8 @@ export const App: React.FC = () => {
           <Route path="/profile" element={<ProfilePage user={user} onUserUpdate={setUser} />} />
           <Route path="/resume" element={<ResumePage />} />
           <Route path="/resumes" element={<ResumePage />} />
+          <Route path="/ats" element={<AtsAnalyzerPage />} />
+          <Route path="/ats-analyzer" element={<AtsAnalyzerPage />} />
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/job-match" element={<JobMatchPage />} />

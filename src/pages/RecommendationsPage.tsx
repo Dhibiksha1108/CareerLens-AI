@@ -13,9 +13,11 @@ import {
   RefreshCw,
   CheckCircle2,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Map,
+  FileCheck2
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 // Helper functions for dynamic skill gap and learning area generation
 const determineCategory = (skill: string): string => {
@@ -80,6 +82,7 @@ const suggestProjects = (skill: string, roleName: string): string[] => {
 };
 
 export const RecommendationsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<CareerRecommendationRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -122,7 +125,39 @@ export const RecommendationsPage: React.FC = () => {
     fetchRecommendations();
   }, []);
 
-  const selectedRole = data?.recommendedRoles?.[selectedRoleIndex] || data?.recommendedRoles?.[0];
+  // Sync selectedRoleIndex with query param or localStorage
+  useEffect(() => {
+    if (data?.recommendedRoles && data.recommendedRoles.length > 0) {
+      const roleParam = searchParams.get('role') || localStorage.getItem('careerlens_selected_target_role');
+      if (roleParam) {
+        const foundIndex = data.recommendedRoles.findIndex(
+          r => r.role.toLowerCase() === roleParam.toLowerCase()
+        );
+        if (foundIndex !== -1 && foundIndex !== selectedRoleIndex) {
+          setSelectedRoleIndex(foundIndex);
+        }
+      }
+    }
+  }, [data, searchParams]);
+
+  const handleRoleSelect = (idx: number, roleName: string) => {
+    setSelectedRoleIndex(idx);
+    setSearchParams({ role: roleName });
+    localStorage.setItem('careerlens_selected_target_role', roleName);
+  };
+
+  // Dynamically determine selectedRole based on searchParams, localStorage, or selectedRoleIndex
+  const selectedRole = useMemo(() => {
+    if (!data?.recommendedRoles || data.recommendedRoles.length === 0) return null;
+    const roleParam = searchParams.get('role') || (typeof window !== 'undefined' ? localStorage.getItem('careerlens_selected_target_role') : null);
+    if (roleParam) {
+      const match = data.recommendedRoles.find(
+        r => r.role.trim().toLowerCase() === roleParam.trim().toLowerCase()
+      );
+      if (match) return match;
+    }
+    return data.recommendedRoles[selectedRoleIndex] || data.recommendedRoles[0];
+  }, [data, searchParams, selectedRoleIndex]);
 
   // Dynamically compute/retrieve the skill gaps strictly for the currently selected role
   const activeRoleSkillGaps: ISkillGap[] = useMemo(() => {
@@ -263,7 +298,7 @@ export const RecommendationsPage: React.FC = () => {
             return (
               <div
                 key={recRole.role}
-                onClick={() => setSelectedRoleIndex(idx)}
+                onClick={() => handleRoleSelect(idx, recRole.role)}
                 className={`p-5 rounded-2xl border transition cursor-pointer flex flex-col justify-between space-y-3 ${
                   isSelected
                     ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
@@ -309,17 +344,33 @@ export const RecommendationsPage: React.FC = () => {
       {/* Selected Role Detailed Breakdown */}
       {selectedRole && (
         <div className="p-6 rounded-2xl bg-white border border-slate-200/70 shadow-2xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                 Detailed Role Breakdown
               </span>
               <h3 className="text-base font-black text-slate-900 mt-1">{selectedRole.role}</h3>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-3">
               <span className="text-xs font-black text-slate-900">
-                Compatibility Rating: <strong className="text-emerald-700">{selectedRole.matchPercentage}%</strong>
+                Fit: <strong className="text-emerald-700">{selectedRole.matchPercentage}%</strong>
               </span>
+              <Link
+                to={`/ats-analyzer?role=${encodeURIComponent(selectedRole.role)}`}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <FileCheck2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>ATS Check</span>
+              </Link>
+              <Link
+                to={`/roadmap?role=${encodeURIComponent(selectedRole.role)}`}
+                state={{ selectedRole: selectedRole.role }}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Map className="w-3.5 h-3.5" />
+                <span>View Learning Roadmap</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
           </div>
 
@@ -388,6 +439,7 @@ export const RecommendationsPage: React.FC = () => {
 
             <Link
               to={`/roadmap?role=${encodeURIComponent(selectedRole.role)}`}
+              state={{ selectedRole: selectedRole.role }}
               className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition flex items-center gap-1 shrink-0"
             >
               <span>View Learning Roadmap</span>
@@ -485,6 +537,7 @@ export const RecommendationsPage: React.FC = () => {
         </div>
         <Link
           to={`/roadmap?role=${encodeURIComponent(selectedRole?.role || data?.targetRole || 'Data Analyst')}`}
+          state={{ selectedRole: selectedRole?.role }}
           className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <span>Explore Career Roadmap</span>

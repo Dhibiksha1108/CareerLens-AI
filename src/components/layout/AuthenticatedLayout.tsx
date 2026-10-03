@@ -18,7 +18,8 @@ import {
   Menu,
   X,
   Mountain,
-  Sparkles
+  Sparkles,
+  FileCheck2
 } from 'lucide-react';
 
 interface AuthenticatedLayoutProps {
@@ -40,6 +41,7 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
     { label: 'Home', path: '/dashboard', altPaths: ['/', '/home'], icon: Home },
     { label: 'My Profile', path: '/profile', icon: User },
     { label: 'Resume Analysis', path: '/resume', altPaths: ['/resumes'], icon: FileText },
+    { label: 'ATS & Readability', path: '/ats-analyzer', altPaths: ['/ats'], icon: FileCheck2 },
     { label: 'Job Match', path: '/job-match', altPaths: ['/jobs', '/match'], icon: Target },
     { label: 'Skills & Evidence', path: '/skills', icon: Bookmark },
     { label: 'Projects', path: '/projects', icon: FolderGit2 },

@@ -1,5 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IPracticalProject {
+  title: string;
+  targetSkill: string;
+  category: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  portfolioEvidence: string;
+  estimatedHours: number;
+  keyDeliverables: string[];
+  architectureOverview?: string;
+}
+
 export interface IRecommendedRole {
   role: string;
   matchPercentage: number;
@@ -8,6 +19,7 @@ export interface IRecommendedRole {
   reason: string;
   skillGaps?: ISkillGap[];
   roadmap?: IRoadmapStage[];
+  practicalProjects?: IPracticalProject[];
 }
 
 export interface ISkillGap {
@@ -18,6 +30,7 @@ export interface ISkillGap {
   recommendedLearningArea: string;
   estimatedHours: number;
   suggestedProjects: string[];
+  practicalProjects?: IPracticalProject[];
   learningResources: Array<{
     title: string;
     type: string;
@@ -47,7 +60,10 @@ export interface IRoadmapStage {
     title: string;
     description: string;
     keyDeliverables: string[];
+    targetSkill?: string;
+    portfolioEvidence?: string;
   };
+  practicalProjects?: IPracticalProject[];
 }
 
 export interface ICareerRecommendation extends Document {
@@ -61,6 +77,20 @@ export interface ICareerRecommendation extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const PracticalProjectSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    targetSkill: { type: String, required: true },
+    category: { type: String, default: 'General Technical' },
+    difficulty: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'], default: 'Intermediate' },
+    portfolioEvidence: { type: String, required: true },
+    estimatedHours: { type: Number, default: 20 },
+    keyDeliverables: [{ type: String }],
+    architectureOverview: { type: String }
+  },
+  { _id: false }
+);
 
 const MilestoneSchema = new Schema(
   {
@@ -86,8 +116,11 @@ const StageSchema = new Schema(
     recommendedProject: {
       title: { type: String },
       description: { type: String },
-      keyDeliverables: [{ type: String }]
-    }
+      keyDeliverables: [{ type: String }],
+      targetSkill: { type: String },
+      portfolioEvidence: { type: String }
+    },
+    practicalProjects: [PracticalProjectSchema]
   },
   { _id: false }
 );
@@ -104,7 +137,8 @@ const CareerRecommendationSchema: Schema = new Schema(
         missingSkills: [{ type: String }],
         reason: { type: String },
         skillGaps: [{ type: Schema.Types.Mixed }],
-        roadmap: [StageSchema]
+        roadmap: [StageSchema],
+        practicalProjects: [PracticalProjectSchema]
       }
     ],
     skillGaps: [
@@ -116,6 +150,7 @@ const CareerRecommendationSchema: Schema = new Schema(
         recommendedLearningArea: { type: String },
         estimatedHours: { type: Number, default: 20 },
         suggestedProjects: [{ type: String }],
+        practicalProjects: [PracticalProjectSchema],
         learningResources: [
           {
             title: { type: String },

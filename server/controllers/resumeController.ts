@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../types/index.js';
 import { ResumeService } from '../services/resumeService.js';
 import { NlpAnalysisService } from '../services/nlpAnalysisService.js';
+import { AtsAnalysisService } from '../services/atsAnalysisService.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 
 export class ResumeController {
@@ -79,6 +80,52 @@ export class ResumeController {
         return;
       }
       sendSuccess(res, 'Resume NLP analysis retrieved successfully', result);
+    } catch (error) {
+      sendError(res, (error as Error).message, null, 400);
+    }
+  }
+
+  static async analyzeAts(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id || req.body.resumeId);
+      const targetRole = req.body.targetRole || (req.query.targetRole as string);
+      const jobDescription = req.body.jobDescription || (req.query.jobDescription as string);
+
+      if (!id) {
+        sendError(res, 'Resume ID is required for ATS analysis', null, 400);
+        return;
+      }
+
+      const result = await AtsAnalysisService.analyzeResumeAts(
+        req.user!.userId,
+        id,
+        targetRole,
+        jobDescription
+      );
+      sendSuccess(res, 'ATS and readability analysis generated successfully', result);
+    } catch (error) {
+      sendError(res, (error as Error).message, null, 400);
+    }
+  }
+
+  static async getAtsAnalysis(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id || (req.query.resumeId as string));
+      const targetRole = req.query.targetRole as string;
+      const jobDescription = req.query.jobDescription as string;
+
+      if (!id) {
+        sendError(res, 'Resume ID is required for ATS analysis', null, 400);
+        return;
+      }
+
+      const result = await AtsAnalysisService.analyzeResumeAts(
+        req.user!.userId,
+        id,
+        targetRole,
+        jobDescription
+      );
+      sendSuccess(res, 'ATS and readability analysis retrieved successfully', result);
     } catch (error) {
       sendError(res, (error as Error).message, null, 400);
     }
