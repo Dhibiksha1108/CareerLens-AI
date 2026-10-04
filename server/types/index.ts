@@ -151,3 +151,210 @@ export interface ICareerBenchmarkResult {
     suggestedActionLink?: string;
   }>;
 }
+
+export interface IUnifiedDashboardData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    selectedTargetRole: string;
+    availableRoles: string[];
+  };
+  profileStrength: {
+    overallScore: number;
+    readinessLevel: 'Job Ready' | 'Competitive' | 'Developing';
+    percentileStanding: string;
+    strengths: string[];
+    weaknesses: string[];
+  };
+  resumeAnalysis: {
+    hasResume: boolean;
+    resumeId?: string;
+    originalName?: string;
+    atsScore: number;
+    readabilityScore: number;
+    readabilityLevel: string;
+    formattingRisksCount: number;
+    keySuggestions: Array<{
+      category: string;
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      actionableFix: string;
+    }>;
+  };
+  skillMatchesAndGaps: {
+    totalSkillsFound: number;
+    matchedSkills: string[];
+    missingSkills: Array<{
+      skill: string;
+      priority: 'high' | 'medium' | 'low';
+      category: string;
+      estimatedHours: number;
+    }>;
+    gapSummary: {
+      highCount: number;
+      mediumCount: number;
+      lowCount: number;
+    };
+  };
+  jobCompatibility: {
+    targetRole: string;
+    compatibilityScore: number;
+    matchingRequirements: string[];
+    missingRequirements: string[];
+    compatibilitySummary: string;
+  };
+  careerRoadmapProgress: {
+    currentStageNumber: number;
+    currentStageTitle: string;
+    totalStages: number;
+    totalMilestones: number;
+    completedMilestones: number;
+    remainingMilestones: number;
+    percentComplete: number;
+    nextMilestone: {
+      description: string;
+      skillTarget: string;
+    } | null;
+  };
+  practicalProjects: {
+    totalProjectsCount: number;
+    completedProjectsCount: number;
+    portfolioEvidenceProgress: number;
+    recommendedProjects: Array<{
+      title: string;
+      targetSkill: string;
+      category: string;
+      difficulty: string;
+      portfolioEvidence: string;
+      status: 'completed' | 'in_progress' | 'missing';
+    }>;
+  };
+  portfolioImprovement: {
+    currentScore: number;
+    potentialScore: number;
+    projectedUplift: number;
+    topSimulationLevers: Array<{
+      type: 'skill' | 'project' | 'certification';
+      title: string;
+      estimatedGain: number;
+    }>;
+  };
+  careerBenchmarking: {
+    readinessScore: number;
+    industryAverage: number;
+    candidatePercentile: string;
+    standing: 'Strong' | 'Adequate' | 'Emerging';
+    topCompetencyGaps: Array<{
+      domain: string;
+      candidateScore: number;
+      industryAverage: number;
+      percentile: string;
+      status: 'exceeds' | 'meets' | 'below';
+    }>;
+  };
+}
+
+export interface ICareerAnalyticsData {
+  targetRole: string;
+  availableRoles: string[];
+  readinessSummary: {
+    overallReadiness: number;
+    industryBaseline: number;
+    potentialUplift: number;
+    candidatePercentile: string;
+    readinessTrend: Array<{ stage: string; score: number }>;
+  };
+  jobCompatibilityAnalytics: {
+    selectedRoleMatch: number;
+    roleComparison: Array<{
+      role: string;
+      matchPercentage: number;
+      matchedCount: number;
+      missingCount: number;
+      isSelected: boolean;
+    }>;
+  };
+  skillGapDistribution: {
+    priorityDistribution: Array<{
+      priority: 'High' | 'Medium' | 'Low';
+      count: number;
+      totalHours: number;
+      color: string;
+    }>;
+    categoryDistribution: Array<{
+      category: string;
+      count: number;
+      totalHours: number;
+    }>;
+  };
+  learningRoadmapAnalytics: {
+    stages: Array<{
+      stageNumber: number;
+      title: string;
+      totalMilestones: number;
+      completedMilestones: number;
+      percentComplete: number;
+    }>;
+    overallMilestoneProgress: {
+      total: number;
+      completed: number;
+      remaining: number;
+      percent: number;
+    };
+  };
+  projectPortfolioProgress: {
+    totalProjects: number;
+    completedProjects: number;
+    inProgressProjects: number;
+    missingProjects: number;
+    portfolioReadinessScore: number;
+  };
+  careerBenchmarkComparison: {
+    readinessScore: number;
+    industryAverage: number;
+    domainComparisons: Array<{
+      domain: string;
+      candidateScore: number;
+      industryAverage: number;
+      targetExpectation: number;
+      percentile: string;
+      status: 'exceeds' | 'meets' | 'below';
+    }>;
+  };
+  skillChartsData: {
+    verifiedVsMissing: {
+      verifiedCount: number;
+      missingCount: number;
+      totalCount: number;
+      verifiedPercent: number;
+      missingPercent: number;
+    };
+    priorityBreakdown: Array<{
+      name: string;
+      value: number;
+      fill: string;
+    }>;
+    categoryCoverage: Array<{
+      category: string;
+      verifiedCount: number;
+      missingCount: number;
+      totalCount: number;
+      coveragePercent: number;
+    }>;
+    roleSkillCoverage: Array<{
+      skill: string;
+      status: 'verified' | 'missing';
+      priority: 'high' | 'medium' | 'low';
+      category: string;
+      confidence: number;
+      proficiency: string;
+    }>;
+    milestoneSkillProgress: Array<{
+      skill: string;
+      completed: boolean;
+      stage: number;
+      description: string;
+    }>;
+  };
+}

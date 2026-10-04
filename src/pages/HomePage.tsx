@@ -1,716 +1,899 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
-import type { ResumeRecord, JobAnalysisRecord, SkillEvidenceRecord } from '../types';
+import type { IUnifiedDashboardData } from '../types';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import {
   Sparkles,
-  Mountain,
-  FolderKanban,
-  Layers,
+  Target,
+  ShieldCheck,
+  Award,
   FileText,
-  ArrowUpRight,
-  Check,
-  Minus,
-  Circle,
-  Database,
-  Code2,
+  CheckCircle2,
+  AlertTriangle,
+  TrendingUp,
+  Map,
+  FolderGit2,
+  SlidersHorizontal,
   BarChart3,
-  Cpu,
-  PieChart,
-  Lightbulb,
-  GitFork,
-  FolderCheck,
-  FileCode,
-  BookOpen,
-  ChevronRight,
-  Target
+  ArrowRight,
+  RefreshCw,
+  Check,
+  Briefcase,
+  Code2,
+  Layers,
+  Zap,
+  CheckCheck,
+  FileCheck2,
+  Clock,
+  Info,
+  ChevronRight
 } from 'lucide-react';
 
 interface HomePageProps {
-  user: any;
+  user?: any;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ user }) => {
-  const [resumes, setResumes] = useState<ResumeRecord[]>([]);
-  const [matches, setMatches] = useState<JobAnalysisRecord[]>([]);
-  const [evidences, setEvidences] = useState<SkillEvidenceRecord[]>([]);
+export const HomePage: React.FC<HomePageProps> = ({ user: initialUser }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const roleFromUrl = searchParams.get('role');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [resumesRes, matchesRes, evidencesRes] = await Promise.all([
-          apiClient.get<ResumeRecord[]>('/resume/me').catch(() => ({ data: [] })),
-          apiClient.get<JobAnalysisRecord[]>('/jobs/matches').catch(() => ({ data: [] })),
-          apiClient.get<SkillEvidenceRecord[]>('/skills/evidence').catch(() => ({ data: [] }))
-        ]);
+  const [dashboard, setDashboard] = useState<IUnifiedDashboardData | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>(roleFromUrl || '');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-        setResumes(resumesRes.data || []);
-        setMatches(matchesRes.data || []);
-        setEvidences(evidencesRes.data || []);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
+  // Fetch unified dashboard data from backend API
+  const fetchDashboardData = async (roleName?: string) => {
+    try {
+      setError(null);
+      const queryParam = roleName || selectedRole || roleFromUrl;
+      const endpoint = queryParam
+        ? `/users/dashboard?role=${encodeURIComponent(queryParam)}`
+        : '/users/dashboard';
+
+      const res = await apiClient.get<IUnifiedDashboardData>(endpoint);
+      if (res.data) {
+        setDashboard(res.data);
+        if (!selectedRole && res.data.user.selectedTargetRole) {
+          setSelectedRole(res.data.user.selectedTargetRole);
+        }
       }
-    };
-
-    fetchData();
-  }, []);
-
-  const displayName = user?.name || 'Dhibiksha';
-  const targetRole = (user?.targetRoles && user.targetRoles[0]) || 'Data Analyst';
-
-  // Dynamic values or baseline from screenshot
-  const latestMatch = matches[0];
-  const matchScore = latestMatch?.matchResult?.matchPercentage || latestMatch?.compatibilityBreakdown?.finalWeightedScore || 72;
-  const matchingSkillsCount = latestMatch?.matchingSkills?.length || 10;
-  const partialSkillsCount = latestMatch?.partialSkills?.length || 3;
-  const missingSkillsCount = latestMatch?.missingSkills?.length || 4;
-
-  const skillsCount = evidences.length > 0 ? evidences.length : 12;
-
-  // Render status badge for skill matrix
-  const renderStatus = (status: 'verified' | 'partial' | 'none') => {
-    if (status === 'verified') {
-      return (
-        <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-2xs">
-          <Check className="w-3 h-3 stroke-[3]" />
-        </div>
-      );
+    } catch (err: any) {
+      console.error('[HomePage] Error fetching unified dashboard data:', err);
+      setError(err.message || 'Failed to retrieve unified dashboard data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    if (status === 'partial') {
-      return (
-        <div className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center mx-auto shadow-2xs">
-          <Minus className="w-3 h-3 stroke-[3]" />
-        </div>
-      );
-    }
-    return (
-      <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center mx-auto">
-        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-      </div>
-    );
   };
 
-  const skillEvidenceRows = [
-    {
-      name: 'Python',
-      icon: Code2,
-      proficiency: 92,
-      color: 'bg-emerald-500',
-      badgeBg: 'bg-emerald-50 text-emerald-600',
-      resume: 'verified',
-      github: 'verified',
-      projects: 'verified',
-      jobMatch: 'verified'
-    },
-    {
-      name: 'SQL',
-      icon: Database,
-      proficiency: 85,
-      color: 'bg-sky-500',
-      badgeBg: 'bg-sky-50 text-sky-600',
-      resume: 'verified',
-      github: 'verified',
-      projects: 'partial',
-      jobMatch: 'verified'
-    },
-    {
-      name: 'Power BI',
-      icon: BarChart3,
-      proficiency: 78,
-      color: 'bg-amber-500',
-      badgeBg: 'bg-amber-50 text-amber-600',
-      resume: 'verified',
-      github: 'partial',
-      projects: 'verified',
-      jobMatch: 'verified'
-    },
-    {
-      name: 'Machine Learning',
-      icon: Cpu,
-      proficiency: 60,
-      color: 'bg-purple-500',
-      badgeBg: 'bg-purple-50 text-purple-600',
-      resume: 'none',
-      github: 'partial',
-      projects: 'none',
-      jobMatch: 'partial'
-    },
-    {
-      name: 'Data Visualization',
-      icon: PieChart,
-      proficiency: 70,
-      color: 'bg-rose-500',
-      badgeBg: 'bg-rose-50 text-rose-600',
-      resume: 'partial',
-      github: 'verified',
-      projects: 'none',
-      jobMatch: 'none'
-    }
-  ];
+  useEffect(() => {
+    fetchDashboardData(roleFromUrl || undefined);
+  }, [roleFromUrl]);
+
+  // Handle target role change
+  const handleRoleChange = async (newRole: string) => {
+    setSelectedRole(newRole);
+    setSearchParams({ role: newRole });
+    setRefreshing(true);
+    await fetchDashboardData(newRole);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-16 text-center bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <LoadingSpinner size="lg" />
+        <div className="space-y-1">
+          <h2 className="text-sm font-bold text-slate-900">Assembling Unified Career Dashboard</h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Aggregating Profile Strength, Phase 4B ATS Readability, Phase 2D Skill Matches, Phase 3 Roadmap Milestones, and Phase 4C Benchmarks...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !dashboard) {
+    return (
+      <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <div className="max-w-md mx-auto space-y-1">
+          <h2 className="text-sm font-bold text-slate-900">Dashboard Unavailable</h2>
+          <p className="text-xs text-slate-500">{error || 'Unable to load unified career dashboard.'}</p>
+        </div>
+        <button
+          onClick={() => {
+            setLoading(true);
+            fetchDashboardData();
+          }}
+          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl inline-flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" /> Retry Loading
+        </button>
+      </div>
+    );
+  }
+
+  const {
+    user,
+    profileStrength,
+    resumeAnalysis,
+    skillMatchesAndGaps,
+    jobCompatibility,
+    careerRoadmapProgress,
+    practicalProjects,
+    portfolioImprovement,
+    careerBenchmarking
+  } = dashboard;
+
+  const activeRoleName = selectedRole || user.selectedTargetRole || 'Full Stack Developer';
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Row 1: Two Top Banners */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Banner: Welcome */}
-        <div className="lg:col-span-8 p-7 rounded-2xl bg-white border border-slate-200/60 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Good morning, {displayName} 👋
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Here's an overview of your career profile.
+    <div className="space-y-6 pb-16 font-sans">
+      {/* 1. Top Welcome Banner & Target Role Synchronizer */}
+      <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                Welcome back, {user.name} 👋
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
+                Phase 4D Unified Hub
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              One unified command center connecting your verified profile, ATS diagnostics, role compatibility, learning roadmap, and market benchmarks.
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50/70 border border-amber-200/70 text-xs text-amber-900 font-medium shrink-0">
-            <span className="text-amber-500">💡</span>
-            <span className="italic">"Small steps today, a stronger tomorrow."</span>
+          {/* Synchronized Target Role Selector */}
+          <div className="flex items-center gap-2 shrink-0 bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+            <Target className="w-4 h-4 text-emerald-600 shrink-0 ml-1" />
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold uppercase text-slate-400">Target Role</span>
+              <select
+                value={activeRoleName}
+                onChange={(e) => handleRoleChange(e.target.value)}
+                disabled={refreshing}
+                className="text-xs font-bold text-slate-900 bg-transparent border-none focus:outline-hidden cursor-pointer"
+              >
+                {user.availableRoles.map(role => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => {
+                setRefreshing(true);
+                fetchDashboardData(activeRoleName);
+              }}
+              disabled={refreshing}
+              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white transition-colors"
+              title="Refresh Dashboard"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
 
-        {/* Right Banner: Inspirational Card */}
-        <div className="lg:col-span-4 p-6 rounded-2xl bg-linear-to-r from-emerald-800 to-teal-900 text-white shadow-xs flex flex-col justify-between space-y-4">
-          <div>
-            <h2 className="text-base font-extrabold text-white">
-              You're on the right path.
+        {/* Phase Quick-Navigation Link Badges */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+            Deep-Dive Modules:
+          </span>
+          <Link
+            to={`/resume`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700 hover:text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Resume & NLP</span>
+          </Link>
+          <Link
+            to={`/ats-analyzer?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <FileCheck2 className="w-3.5 h-3.5 text-blue-600" />
+            <span>Phase 4B: ATS Check</span>
+          </Link>
+          <Link
+            to={`/recommendations?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-amber-50 border border-slate-200 text-slate-700 hover:text-amber-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>Phase 2D: Recommendations</span>
+          </Link>
+          <Link
+            to={`/roadmap?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-emerald-50 border border-slate-200 text-slate-700 hover:text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <Map className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Phase 3: Learning Roadmap</span>
+          </Link>
+          <Link
+            to={`/simulator?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 hover:text-indigo-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Phase 4A: Simulator</span>
+          </Link>
+          <Link
+            to={`/benchmarking?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-purple-50 border border-slate-200 text-slate-700 hover:text-purple-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-purple-600" />
+            <span>Phase 4C: Benchmarks</span>
+          </Link>
+          <Link
+            to={`/analytics?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Phase 5A+5B: Analytics & Charts</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* 2. ITEM 1: PROFILE STRENGTH (Hero Banner Card) */}
+      <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 text-white shadow-md relative overflow-hidden space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-2 max-w-xl">
+            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              Profile Strength Index
+            </span>
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              {profileStrength.readinessLevel} Standing • {profileStrength.percentileStanding} of Market
             </h2>
-            <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
-              Keep building, keep learning, keep growing.
+            <p className="text-xs text-emerald-100/80 leading-relaxed">
+              Synthesized across verified skill competencies, ATS parsability, and hiring benchmarks for <strong className="text-white">{activeRoleName}</strong>.
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-200 font-medium pt-1">
-            <Mountain className="w-3.5 h-3.5" />
-            <span>Career Horizon • Phase 1B Active</span>
+          {/* Profile Strength Score Gauge */}
+          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 shrink-0">
+            <div className="text-center">
+              <span className="text-4xl font-black text-white">{profileStrength.overallScore}%</span>
+              <span className="text-[10px] uppercase font-bold text-emerald-300 block">Overall Strength</span>
+            </div>
+            <div className="w-px h-10 bg-white/20" />
+            <div className="text-xs text-emerald-100 font-medium space-y-0.5">
+              <div>Role Fit: <strong className="text-white">{jobCompatibility.compatibilityScore}%</strong></div>
+              <div>ATS Rating: <strong className="text-white">{resumeAnalysis.atsScore}%</strong></div>
+              <div>Percentile: <strong className="text-white">{careerBenchmarking.candidatePercentile}</strong></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Strengths & Weaknesses Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-white/15 relative z-10">
+          {/* Key Strengths */}
+          <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-2">
+            <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-400" /> Key Verified Strengths
+            </span>
+            <div className="space-y-1.5">
+              {profileStrength.strengths.map((str, idx) => (
+                <div key={idx} className="text-xs text-emerald-50 flex items-start gap-1.5">
+                  <span className="text-emerald-400 font-bold shrink-0">•</span>
+                  <span>{str}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Key Weaknesses / Gaps */}
+          <div className="p-3.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10 space-y-2">
+            <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Key Development Priorities
+            </span>
+            <div className="space-y-1.5">
+              {profileStrength.weaknesses.map((weak, idx) => (
+                <div key={idx} className="text-xs text-emerald-50 flex items-start gap-1.5">
+                  <span className="text-amber-400 font-bold shrink-0">•</span>
+                  <span>{weak}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Row 2: Four Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Card 1: Career Readiness */}
-        <div className="p-5 rounded-2xl bg-[#f0fdf4] border border-emerald-100/80 shadow-2xs flex flex-col justify-between space-y-4">
+      {/* 3. FOUR COMMAND TILES */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Tile 1: Resume & ATS Score (Phase 4B) */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
-            {/* Circular Gauge */}
-            <div className="relative w-12 h-12 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="text-emerald-100"
-                  strokeWidth="3.5"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  className="text-emerald-500"
-                  strokeDasharray="78, 100"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <span className="absolute text-xs font-black text-slate-800">78%</span>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-semibold text-slate-500">Career Readiness</span>
-            </div>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <FileCheck2 className="w-4 h-4 text-blue-600" /> ATS Diagnostics
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              {resumeAnalysis.readabilityLevel}
+            </span>
           </div>
-          <div className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-            <span>↑ 12% from last analysis</span>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-slate-900">{resumeAnalysis.atsScore}%</span>
+              <span className="text-xs text-slate-400 font-medium">ATS Match</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Readability: <strong className="text-slate-700">{resumeAnalysis.readabilityScore}/100</strong> • {resumeAnalysis.formattingRisksCount} formatting risks
+            </p>
           </div>
+          <Link
+            to={`/ats-analyzer?role=${encodeURIComponent(activeRoleName)}`}
+            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 pt-2 border-t border-slate-100"
+          >
+            <span>Inspect ATS Diagnostics</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
-        {/* Card 2: Projects Analyzed */}
-        <div className="p-5 rounded-2xl bg-[#eff6ff] border border-blue-100/80 shadow-2xs flex flex-col justify-between space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-              <FolderKanban className="w-5 h-5" />
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-semibold text-slate-500">Projects Analyzed</span>
-              <div className="text-2xl font-black text-slate-900 mt-0.5">6</div>
-            </div>
+        {/* Tile 2: Job Compatibility (Phase 2) */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Target className="w-4 h-4 text-emerald-600" /> Job Compatibility
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+              {jobCompatibility.compatibilityScore >= 75 ? 'Strong Match' : 'Developing'}
+            </span>
           </div>
-          <div className="text-[11px] font-semibold text-blue-600">
-            2 strong projects
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-emerald-700">{jobCompatibility.compatibilityScore}%</span>
+              <span className="text-xs text-slate-400 font-medium">Role Fit</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1 truncate">
+              Targeting: <strong className="text-slate-700">{jobCompatibility.targetRole}</strong>
+            </p>
           </div>
+          <Link
+            to={`/recommendations?role=${encodeURIComponent(activeRoleName)}`}
+            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 pt-2 border-t border-slate-100"
+          >
+            <span>View Role Recommendations</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
-        {/* Card 3: Skills Identified */}
-        <div className="p-5 rounded-2xl bg-[#faf5ff] border border-purple-100/80 shadow-2xs flex flex-col justify-between space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-semibold text-slate-500">Skills Identified</span>
-              <div className="text-2xl font-black text-slate-900 mt-0.5">{skillsCount}</div>
-            </div>
+        {/* Tile 3: Roadmap Progress (Phase 3) */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Map className="w-4 h-4 text-indigo-600" /> Learning Roadmap
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Stage {careerRoadmapProgress.currentStageNumber} of {careerRoadmapProgress.totalStages}
+            </span>
           </div>
-          <div className="text-[11px] font-semibold text-purple-600">
-            4 skill gaps
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-indigo-700">{careerRoadmapProgress.percentComplete}%</span>
+              <span className="text-xs text-slate-400 font-medium">Milestones</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              {careerRoadmapProgress.completedMilestones} completed • {careerRoadmapProgress.remainingMilestones} remaining
+            </p>
           </div>
+          <Link
+            to={`/roadmap?role=${encodeURIComponent(activeRoleName)}`}
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-2 border-t border-slate-100"
+          >
+            <span>Open Learning Roadmap</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
 
-        {/* Card 4: Resume Score */}
-        <div className="p-5 rounded-2xl bg-[#fffbeb] border border-amber-100/80 shadow-2xs flex flex-col justify-between space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-semibold text-slate-500">Resume Score</span>
-              <div className="text-2xl font-black text-slate-900 mt-0.5">85%</div>
-            </div>
+        {/* Tile 4: Market Benchmarking (Phase 4C) */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4 text-purple-600" /> Market Benchmark
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+              {careerBenchmarking.candidatePercentile}
+            </span>
           </div>
-          <div className="flex items-center justify-between text-[11px] font-semibold">
-            <span className="text-amber-700">Identified 5 improvement points</span>
-            <Link to="/resume" className="text-slate-600 hover:text-slate-900 transition">
-              View details →
-            </Link>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-purple-700">{careerBenchmarking.readinessScore}%</span>
+              <span className="text-xs text-slate-400 font-medium">vs Avg {careerBenchmarking.industryAverage}%</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Standing: <strong className="text-slate-700">{careerBenchmarking.standing}</strong> ({careerBenchmarking.topCompetencyGaps.length} domains analyzed)
+            </p>
           </div>
+          <Link
+            to={`/benchmarking?role=${encodeURIComponent(activeRoleName)}`}
+            className="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1 pt-2 border-t border-slate-100"
+          >
+            <span>Inspect Benchmark Standing</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
       </div>
 
-      {/* Row 3: Skill Evidence Overview (Left) & Job Match (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Column: Skill Evidence Overview */}
-        <div className="lg:col-span-8 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-extrabold text-slate-900">
-                Skill Evidence Overview
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Multi-source evidence verification across profiles
-              </p>
-            </div>
-            <Link
-              to="/skills"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
-            >
-              View All →
-            </Link>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[11px] font-semibold text-slate-400 border-b border-slate-100">
-                  <th className="pb-3 font-semibold">Skill Name & Proficiency</th>
-                  <th className="pb-3 font-semibold text-center w-16">Resume</th>
-                  <th className="pb-3 font-semibold text-center w-16">GitHub</th>
-                  <th className="pb-3 font-semibold text-center w-16">Projects</th>
-                  <th className="pb-3 font-semibold text-center w-16">Job Match</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {skillEvidenceRows.map(row => {
-                  const Icon = row.icon;
-                  return (
-                    <tr key={row.name} className="hover:bg-slate-50/50 transition">
-                      <td className="py-3.5 pr-4">
-                        <div className="space-y-1.5 max-w-sm">
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-6 h-6 rounded-lg ${row.badgeBg} flex items-center justify-center`}>
-                                <Icon className="w-3.5 h-3.5" />
-                              </div>
-                              <span className="font-extrabold text-slate-900">{row.name}</span>
-                            </div>
-                            <span className="font-bold text-slate-900">{row.proficiency}%</span>
-                          </div>
-                          {/* Progress bar */}
-                          <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${row.color}`}
-                              style={{ width: `${row.proficiency}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3.5 text-center">{renderStatus(row.resume as any)}</td>
-                      <td className="py-3.5 text-center">{renderStatus(row.github as any)}</td>
-                      <td className="py-3.5 text-center">{renderStatus(row.projects as any)}</td>
-                      <td className="py-3.5 text-center">{renderStatus(row.jobMatch as any)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right Column: Job Match Card */}
-        <div className="lg:col-span-4 p-6 rounded-2xl bg-white border border-slate-200/60 shadow-2xs flex flex-col justify-between space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-slate-900">Job Match</h2>
-            <Link
-              to="/job-match"
-              className="text-xs font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-xl border border-sky-100 transition inline-flex items-center gap-1"
-            >
-              <span>Analyze New Job</span>
-              <span>→</span>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-6 py-4">
-            {/* Circular Gauge */}
-            <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="text-slate-100"
-                  strokeWidth="3.5"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  className="text-emerald-500"
-                  strokeDasharray={`${matchScore}, 100`}
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <div className="absolute text-center flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-slate-900 leading-tight">{matchScore}%</span>
-                <span className="text-[8px] font-extrabold uppercase tracking-wider text-slate-400 mt-0.5">
-                  MATCH SCORE
-                </span>
-              </div>
-            </div>
-
-            {/* Target Role & Breakdown */}
-            <div className="space-y-3">
+      {/* 4. TWO-COLUMN GRID: SKILL MATCHES & GAPS (Item 3) + JOB COMPATIBILITY (Item 4) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* ITEM 3: SKILL MATCHES & PRIORITIZED GAPS */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  TARGET ROLE
-                </span>
-                <h3 className="text-base font-extrabold text-slate-900 mt-0.5">
-                  {targetRole}
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Code2 className="w-4 h-4 text-emerald-600" /> Skill Matches & Prioritized Gaps
                 </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Verified competencies vs missing requirements for {activeRoleName}.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded-md border border-rose-200">
+                  {skillMatchesAndGaps.gapSummary.highCount} High
+                </span>
+                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md border border-amber-200">
+                  {skillMatchesAndGaps.gapSummary.mediumCount} Med
+                </span>
+                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                  {skillMatchesAndGaps.gapSummary.lowCount} Low
+                </span>
+              </div>
+            </div>
+
+            {/* Matched Skills */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Skills ({skillMatchesAndGaps.matchedSkills.length})
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {skillMatchesAndGaps.matchedSkills.slice(0, 8).map(skill => (
+                  <span
+                    key={skill}
+                    className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg"
+                  >
+                    ✓ {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Prioritized Missing Skills */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Missing Competencies ({skillMatchesAndGaps.missingSkills.length})
+              </span>
+              <div className="space-y-2">
+                {skillMatchesAndGaps.missingSkills.slice(0, 3).map(gap => (
+                  <div
+                    key={gap.skill}
+                    className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase ${
+                        gap.priority === 'high' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {gap.priority}
+                      </span>
+                      <span className="font-bold text-slate-800 truncate">{gap.skill}</span>
+                      <span className="text-[10px] text-slate-400">({gap.category})</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 shrink-0 font-medium">~{gap.estimatedHours} hrs</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Link
+            to={`/skills`}
+            className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors border border-slate-200/70 mt-3"
+          >
+            <span>Manage Skills & Evidence</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* ITEM 4: JOB COMPATIBILITY */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-emerald-600" /> Target Role Job Compatibility
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Phase 2 job description matching and competency alignment.
+                </p>
+              </div>
+              <span className="text-sm font-extrabold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                {jobCompatibility.compatibilityScore}% Compatibility
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 font-medium">
+              {jobCompatibility.compatibilitySummary}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Matching Requirements */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" /> Matching Requisites
+                </span>
+                <div className="space-y-1">
+                  {jobCompatibility.matchingRequirements.slice(0, 4).map((req, i) => (
+                    <div key={i} className="text-xs text-slate-700 flex items-center gap-1.5 bg-emerald-50/40 p-1.5 rounded-lg border border-emerald-100">
+                      <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span className="truncate">{req}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-2 text-xs font-semibold text-slate-700">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span>{matchingSkillsCount} Matching Skills</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                  <span>{partialSkillsCount} Partial Skills</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                  <span>{missingSkillsCount} Missing Skills</span>
+              {/* Missing Requirements */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Missing Requisites
+                </span>
+                <div className="space-y-1">
+                  {jobCompatibility.missingRequirements.slice(0, 4).map((req, i) => (
+                    <div key={i} className="text-xs text-slate-700 flex items-center gap-1.5 bg-amber-50/40 p-1.5 rounded-lg border border-amber-100">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                      <span className="truncate">{req}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-100">
-            <Link
-              to="/job-match"
-              className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition shadow-2xs flex items-center justify-center gap-1.5"
-            >
-              <span>View Full Compatibility Analysis</span>
-              <span>→</span>
-            </Link>
-          </div>
+          <Link
+            to={`/job-match`}
+            className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors border border-slate-200/70 mt-3"
+          >
+            <span>Explore Full Job Matches & NLP Scoring</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
 
-      {/* Row 4: 3 Cards Grid (Recent Analysis, Recommended Next Steps, Career Roadmap) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Card 1: Recent Analysis */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-slate-900">Recent Analysis</h2>
-            <Link
-              to="/resume"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
-            >
-              View All →
-            </Link>
+      {/* 5. TWO-COLUMN GRID: RESUME & ATS ANALYSIS (Item 2) + PRACTICAL PROJECTS (Item 6) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* ITEM 2: RESUME ANALYSIS & READABILITY (Phase 4B) */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-blue-600" /> Resume & ATS Diagnostics (Phase 4B)
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Document: <strong className="text-slate-700">{resumeAnalysis.originalName || 'Active Resume'}</strong>
+                </p>
+              </div>
+
+              <div className="text-right">
+                <span className="text-base font-black text-blue-700">{resumeAnalysis.atsScore}/100</span>
+                <span className="text-[10px] text-slate-400 block font-medium">ATS Compatibility</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Readability</span>
+                <span className="text-sm font-extrabold text-slate-800">{resumeAnalysis.readabilityScore}/100</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Cognitive Ease</span>
+                <span className="text-xs font-bold text-blue-700">{resumeAnalysis.readabilityLevel}</span>
+              </div>
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Layout Risks</span>
+                <span className="text-sm font-extrabold text-amber-600">{resumeAnalysis.formattingRisksCount}</span>
+              </div>
+            </div>
+
+            {/* Key Suggestions */}
+            <div className="space-y-2 pt-1 border-t border-slate-100">
+              <span className="text-[11px] font-bold text-slate-700">Top ATS Improvement Suggestions:</span>
+              <div className="space-y-2">
+                {resumeAnalysis.keySuggestions.map((sug, idx) => (
+                  <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">
+                        {sug.priority}
+                      </span>
+                      <strong className="text-slate-800 font-semibold truncate">{sug.title}</strong>
+                    </div>
+                    <p className="text-[11px] text-slate-500 line-clamp-2">{sug.actionableFix}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {/* Item 1: Resume Analysis */}
-            <Link
-              to="/resume"
-              className="p-2 rounded-xl hover:bg-slate-50 transition flex items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700 transition">
-                    Resume Analysis
-                  </h3>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    Identified 5 improvement points
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                  2 hours ago
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition" />
-              </div>
-            </Link>
-
-            {/* Item 2: GitHub Analysis */}
-            <Link
-              to="/skills"
-              className="p-2 rounded-xl hover:bg-slate-50 transition flex items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                  <GitFork className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700 transition">
-                    GitHub Analysis
-                  </h3>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    Analyzed 8 repositories
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                  5 hours ago
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition" />
-              </div>
-            </Link>
-
-            {/* Item 3: Project Quality */}
-            <Link
-              to="/projects"
-              className="p-2 rounded-xl hover:bg-slate-50 transition flex items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <FolderCheck className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700 transition">
-                    Project Quality
-                  </h3>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    2 projects need improvement
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                  1 day ago
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition" />
-              </div>
-            </Link>
-          </div>
+          <Link
+            to={`/ats-analyzer?role=${encodeURIComponent(activeRoleName)}`}
+            className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors border border-blue-200 mt-3"
+          >
+            <span>Open Full ATS + Human Readability Analyzer</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Card 2: Recommended Next Steps */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-slate-900">Recommended Next Steps</h2>
-            <Link
-              to="/recommendations"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
-            >
-              View All →
-            </Link>
-          </div>
+        {/* ITEM 6: PRACTICAL PROJECTS & PORTFOLIO EVIDENCE (Phase 3C) */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <FolderGit2 className="w-4 h-4 text-purple-600" /> Practical Projects & Portfolio Proof (Phase 3C)
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Portfolio evidence projects mapped to major skill gaps.
+                </p>
+              </div>
 
-          <div className="space-y-3">
-            {/* Step 1 */}
-            <Link
-              to="/projects"
-              className="p-2 rounded-xl hover:bg-slate-50 transition flex items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <Lightbulb className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700 transition truncate">
-                    Build a Python Data Analysis Project
-                  </h3>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    Strengthen your Python and data analysis skills.
+              <div className="text-right">
+                <span className="text-base font-black text-purple-700">
+                  {practicalProjects.completedProjectsCount} / {practicalProjects.totalProjectsCount} Verified
+                </span>
+                <span className="text-[10px] text-slate-400 block font-medium">
+                  {practicalProjects.portfolioEvidenceProgress}% Progress
+                </span>
+              </div>
+            </div>
+
+            {/* Projects List */}
+            <div className="space-y-2.5">
+              {practicalProjects.recommendedProjects.map((proj, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-purple-200 transition-all space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase ${
+                        proj.status === 'completed'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : proj.status === 'in_progress'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {proj.status.replace('_', ' ')}
+                      </span>
+                      <h4 className="text-xs font-bold text-slate-800 truncate">{proj.title}</h4>
+                    </div>
+                    <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 shrink-0">
+                      {proj.targetSkill}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 line-clamp-1">
+                    {proj.portfolioEvidence}
                   </p>
                 </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition shrink-0" />
-            </Link>
-
-            {/* Step 2 */}
-            <Link
-              to="/skills"
-              className="p-2 rounded-xl hover:bg-slate-50 transition flex items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700 transition truncate">
-                    Learn Machine Learning Basics
-                  </h3>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    This skill is required for your target role.
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition shrink-0" />
-            </Link>
-
-            {/* Step 3 */}
-            <Link
-              to="/projects"
-              className="p-2 rounded-xl hover:bg-slate-50 transition flex items-center justify-between gap-3 group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                  <FileCode className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700 transition truncate">
-                    Improve Project Documentation
-                  </h3>
-                  <p className="text-[11px] text-slate-400 truncate">
-                    Add better README files and live demos.
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition shrink-0" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Card 3: Career Roadmap */}
-        <div className="p-6 rounded-2xl bg-white border border-slate-200/60 shadow-2xs space-y-4 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-slate-900">Career Roadmap</h2>
-            <Link
-              to="/roadmap"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
-            >
-              View Full Roadmap →
-            </Link>
-          </div>
-
-          {/* Timeline steps */}
-          <div className="relative pl-1 space-y-4">
-            {/* Step 1 */}
-            <div className="relative flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 z-10 shadow-2xs">
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
-              {/* Connecting vertical line */}
-              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-slate-200 -translate-x-1/2" />
-              <div className="min-w-0 pb-1">
-                <h3 className="text-xs font-extrabold text-slate-900">Build Core Skills</h3>
-                <p className="text-[11px] text-slate-400">SQL, Python, Data Visualization</p>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="relative flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full border-2 border-emerald-500 bg-white flex items-center justify-center shrink-0 z-10">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              </div>
-              {/* Connecting vertical line */}
-              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-slate-200 -translate-x-1/2" />
-              <div className="min-w-0 pb-1">
-                <h3 className="text-xs font-extrabold text-emerald-800">Complete Recommended Projects</h3>
-                <p className="text-[11px] text-slate-400">2 projects suggested</p>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="relative flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full border border-slate-300 bg-white text-slate-400 font-bold text-[11px] flex items-center justify-center shrink-0 z-10">
-                3
-              </div>
-              {/* Connecting vertical line */}
-              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-slate-200 -translate-x-1/2" />
-              <div className="min-w-0 pb-1">
-                <h3 className="text-xs font-extrabold text-slate-800">Fill Skill Gaps</h3>
-                <p className="text-[11px] text-slate-400">Machine Learning, Statistics</p>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="relative flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full border border-slate-300 bg-white text-slate-400 font-bold text-[11px] flex items-center justify-center shrink-0 z-10">
-                4
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs font-extrabold text-slate-800">Apply for Target Roles</h3>
-                <p className="text-[11px] text-slate-400">Data Analyst / Business Analyst</p>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Decorative Dotted Trajectory Arrow SVG */}
-          <div className="absolute right-3 bottom-3 pointer-events-none opacity-60">
-            <svg width="70" height="40" viewBox="0 0 70 40" fill="none">
-              <path
-                d="M 5 35 Q 35 30 55 10"
-                stroke="#10b981"
-                strokeWidth="2"
-                strokeDasharray="3 3"
-                fill="none"
-              />
-              <path
-                d="M 50 10 L 58 8 L 56 16"
-                stroke="#10b981"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
-          </div>
+          <Link
+            to={`/projects`}
+            className="w-full py-2 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors border border-purple-200 mt-3"
+          >
+            <span>View All Practical Projects & Repository Evidence</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
 
-      {/* Row 5: Full-Width Bottom Callout Banner */}
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/60 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-100/80 text-amber-600 flex items-center justify-center shrink-0">
-            <Target className="w-6 h-6 text-amber-600" />
+      {/* 6. TWO-COLUMN GRID: CAREER ROADMAP PROGRESS (Item 5) + PORTFOLIO IMPROVEMENT (Item 7) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* ITEM 5: CAREER ROADMAP PROGRESS (Phase 3) */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Map className="w-4 h-4 text-emerald-600" /> Career Roadmap Progress (Phase 3)
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Stage {careerRoadmapProgress.currentStageNumber}: {careerRoadmapProgress.currentStageTitle}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <span className="text-base font-black text-emerald-700">
+                  {careerRoadmapProgress.completedMilestones} / {careerRoadmapProgress.totalMilestones}
+                </span>
+                <span className="text-[10px] text-slate-400 block font-medium">Milestones Done</span>
+              </div>
+            </div>
+
+            {/* Roadmap Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-600 transition-all duration-700"
+                  style={{ width: `${careerRoadmapProgress.percentComplete}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500 font-medium">
+                <span>{careerRoadmapProgress.percentComplete}% Complete</span>
+                <span>{careerRoadmapProgress.remainingMilestones} milestones remaining</span>
+              </div>
+            </div>
+
+            {/* Next Milestone Action Card */}
+            {careerRoadmapProgress.nextMilestone ? (
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+                <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-emerald-600" /> Next Milestone to Complete:
+                </span>
+                <p className="text-xs font-semibold text-slate-800">
+                  {careerRoadmapProgress.nextMilestone.description}
+                </p>
+                <span className="inline-block text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                  Skill Focus: {careerRoadmapProgress.nextMilestone.skillTarget}
+                </span>
+              </div>
+            ) : (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>All current roadmap milestones completed for this stage!</span>
+              </div>
+            )}
           </div>
+
+          <Link
+            to={`/roadmap?role=${encodeURIComponent(activeRoleName)}`}
+            className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors border border-emerald-200 mt-3"
+          >
+            <span>Advance Learning Roadmap</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* ITEM 7: PORTFOLIO IMPROVEMENT SIMULATOR (Phase 4A) */}
+        <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-4 h-4 text-indigo-600" /> Portfolio Simulator (Phase 4A)
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Model potential score growth without altering your permanent profile.
+                </p>
+              </div>
+
+              <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200">
+                +{portfolioImprovement.projectedUplift}% Potential
+              </span>
+            </div>
+
+            {/* Current vs Potential Score Comparison */}
+            <div className="p-3.5 bg-gradient-to-r from-indigo-50/60 to-purple-50/40 rounded-xl border border-indigo-100 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-slate-600">Current Score: <strong className="text-slate-900">{portfolioImprovement.currentScore}%</strong></span>
+                <span className="text-indigo-700">Projected Score: <strong className="text-indigo-900">{portfolioImprovement.potentialScore}%</strong></span>
+              </div>
+
+              <div className="w-full h-3 rounded-full bg-slate-200/70 overflow-hidden relative">
+                <div
+                  className="h-full bg-slate-600 rounded-full"
+                  style={{ width: `${portfolioImprovement.currentScore}%` }}
+                />
+                <div
+                  className="h-full bg-indigo-500 opacity-60 rounded-full -mt-3"
+                  style={{ width: `${portfolioImprovement.potentialScore}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Top Simulation Levers */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-bold text-slate-700">Top Levers for Career Readiness Uplift:</span>
+              <div className="space-y-1.5">
+                {portfolioImprovement.topSimulationLevers.map((lever, idx) => (
+                  <div key={idx} className="p-2 bg-slate-50 rounded-lg border border-slate-200/60 flex items-center justify-between text-xs">
+                    <span className="text-slate-700 font-medium truncate">{lever.title}</span>
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 shrink-0">
+                      +{lever.estimatedGain}% Gain
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Link
+            to={`/simulator?role=${encodeURIComponent(activeRoleName)}`}
+            className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors border border-indigo-200 mt-3"
+          >
+            <span>Launch Interactive Portfolio Simulator</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* 7. ITEM 8: CAREER BENCHMARKING (Phase 4C Full Width) */}
+      <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
           <div>
-            <h2 className="text-sm font-extrabold text-slate-900">
-              Your Potential is Clear. Now Make It Real.
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Keep improving your profile and follow your personalized roadmap to reach your career goals.
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4 text-purple-600" /> Career Benchmarking & Percentiles (Phase 4C)
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Domain-by-domain evaluation against market standards and high-performer expectations for {activeRoleName}.
             </p>
           </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right">
+              <span className="text-sm font-extrabold text-purple-700">{careerBenchmarking.readinessScore}%</span>
+              <span className="text-[10px] text-slate-400 block font-medium">Readiness Score</span>
+            </div>
+            <div className="w-px h-8 bg-slate-200" />
+            <div className="text-right">
+              <span className="text-sm font-extrabold text-slate-800">{careerBenchmarking.candidatePercentile}</span>
+              <span className="text-[10px] text-slate-400 block font-medium">Percentile Standing</span>
+            </div>
+          </div>
         </div>
 
-        <Link
-          to="/recommendations"
-          className="px-5 py-2.5 rounded-full bg-[#064e3b] hover:bg-[#043d2e] text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-        >
-          <span>Explore Recommendations</span>
-          <span>→</span>
-        </Link>
+        {/* Competency Domains Bar Comparison */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {careerBenchmarking.topCompetencyGaps.map((gap, idx) => {
+            const isExceeds = gap.status === 'exceeds';
+            const isMeets = gap.status === 'meets';
+
+            return (
+              <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800 truncate">{gap.domain}</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                    isExceeds ? 'bg-emerald-100 text-emerald-800' : isMeets ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {gap.percentile}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden relative">
+                    <div
+                      className={`h-full rounded-full ${isExceeds ? 'bg-emerald-600' : isMeets ? 'bg-blue-600' : 'bg-amber-500'}`}
+                      style={{ width: `${gap.candidateScore}%` }}
+                    />
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-slate-500 z-10"
+                      style={{ left: `${gap.industryAverage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-500">
+                    <span>Score: <strong>{gap.candidateScore}%</strong></span>
+                    <span>Industry Avg: <strong>{gap.industryAverage}%</strong></span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Link
+            to={`/benchmarking?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors border border-purple-200"
+          >
+            <span>Explore Full 5-Domain Benchmark Diagnostics</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
     </div>
   );

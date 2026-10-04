@@ -69,11 +69,13 @@ export class BenchmarkingService {
 
     // Find recommended role in Phase 2D data
     let roleObj = rec?.recommendedRoles?.find(
-      r => r.role.toLowerCase() === targetRole.toLowerCase()
+      (r: any) => r.role.trim().toLowerCase() === targetRole.trim().toLowerCase()
     );
 
     if (!roleObj && rec?.recommendedRoles && rec.recommendedRoles.length > 0) {
-      roleObj = rec.recommendedRoles[0];
+      roleObj = rec.recommendedRoles.find(
+        (r: any) => r.role.toLowerCase().replace(/\s+/g, '') === targetRole.toLowerCase().replace(/\s+/g, '')
+      ) || rec.recommendedRoles[0];
     }
 
     // 2. Fetch candidate actual data: resumes, skill evidences
@@ -322,7 +324,7 @@ export class BenchmarkingService {
       portfolioReadinessScore * 0.15 +
       Math.max(percentComplete, 30) * 0.10;
 
-    const overallReadiness = Math.min(Math.max(Math.round(rawReadiness), 25), 98);
+    const overallReadiness = Math.min(Math.max(Math.round(rawReadiness), Math.max(skillMatchRatio, 8)), 98);
 
     const readinessLevel: 'Job Ready' | 'Competitive' | 'Developing' =
       overallReadiness >= 80 ? 'Job Ready' : overallReadiness >= 65 ? 'Competitive' : 'Developing';
