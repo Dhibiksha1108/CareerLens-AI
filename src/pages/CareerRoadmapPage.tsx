@@ -24,7 +24,8 @@ import {
   ExternalLink,
   Flame,
   FileCheck2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  BarChart3
 } from 'lucide-react';
 
 // Client-side helper to ensure practical projects are always populated
@@ -1164,6 +1165,13 @@ export const CareerRoadmapPage: React.FC = () => {
           >
             <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
             <span>Role Recommendations</span>
+          </Link>
+          <Link
+            to={`/benchmarking?role=${encodeURIComponent(activeRole?.role || '')}`}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition shadow-2xs flex items-center gap-1.5"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Benchmark</span>
           </Link>
           <button
             onClick={handleRegenerate}

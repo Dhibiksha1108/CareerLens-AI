@@ -332,3 +332,84 @@ export interface IAtsAnalysisResult {
     actionableFix: string;
   }>;
 }
+
+export interface IDomainBenchmark {
+  domain: string;
+  category: string;
+  candidateScore: number;
+  industryAverage: number;
+  targetExpectation: number;
+  percentile: string;
+  status: 'exceeds' | 'meets' | 'below';
+  verifiedSkills: string[];
+  missingSkills: string[];
+}
+
+export interface IMeetingSkill {
+  skill: string;
+  category: string;
+  proficiency: 'beginner' | 'intermediate' | 'advanced';
+  evidenceStrength: 'low' | 'medium' | 'high' | 'verified';
+  confidence: number;
+  evidenceType: string;
+}
+
+export interface IPortfolioGapItem {
+  targetSkill: string;
+  recommendedProjectTitle: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  portfolioEvidence: string;
+  estimatedHours: number;
+  status: 'completed' | 'in_progress' | 'missing';
+  keyDeliverables: string[];
+}
+
+export interface ICareerBenchmarkResult {
+  targetRole: string;
+  targetRoleDescription: string;
+  overallReadiness: number;
+  industryAverageReadiness: number;
+  candidatePercentile: string;
+  readinessLevel: 'Job Ready' | 'Competitive' | 'Developing';
+  totalExpectedSkills: number;
+  meetingSkillsCount: number;
+  missingSkillsCount: number;
+  meetingSkills: IMeetingSkill[];
+  missingSkills: Array<{
+    skill: string;
+    category: string;
+    priority: 'high' | 'medium' | 'low';
+    demandFrequency: number;
+    recommendedLearningArea: string;
+    estimatedHours: number;
+    suggestedProject: string;
+  }>;
+  domainBenchmarks: IDomainBenchmark[];
+  portfolioGapAnalysis: {
+    candidateProjectCount: number;
+    expectedProjectCount: number;
+    portfolioReadinessScore: number;
+    gaps: IPortfolioGapItem[];
+  };
+  experienceGapAnalysis: {
+    detectedYears: number;
+    expectedLevel: string;
+    standing: 'Strong' | 'Adequate' | 'Emerging';
+    feedback: string;
+  };
+  roadmapProgress: {
+    totalMilestones: number;
+    completedMilestones: number;
+    percentComplete: number;
+    activeStageTitle: string;
+  };
+  clearAreasToImprove: Array<{
+    area: string;
+    category: 'Skill Gap' | 'Portfolio Project' | 'Roadmap Milestone' | 'Experience';
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    impactScore: string;
+    actionableStep: string;
+    suggestedActionLink?: string;
+  }>;
+}

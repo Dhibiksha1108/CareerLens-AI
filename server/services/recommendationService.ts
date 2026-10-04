@@ -1263,6 +1263,30 @@ export class RecommendationService {
     return rec;
   }
 
+  static async updateProjectStatus(
+    userId: string,
+    projectId: string,
+    completed: boolean,
+    roleName?: string,
+    status?: string
+  ): Promise<ICareerRecommendation | null> {
+    const rec = await CareerRecommendation.findOne({ userId });
+    if (!rec) throw new Error('Recommendation record not found');
+
+    if (roleName) {
+      const role = rec.recommendedRoles.find(r => r.role.toLowerCase() === roleName.toLowerCase());
+      if (role && role.practicalProjects) {
+        const proj = role.practicalProjects.find(p => p.title.toLowerCase().includes(projectId.toLowerCase()) || p.targetSkill.toLowerCase().includes(projectId.toLowerCase()));
+        if (proj) {
+          rec.markModified('recommendedRoles');
+        }
+      }
+    }
+
+    await rec.save();
+    return rec;
+  }
+
   // Helpers
   private static determineLearningArea(skill: string): { category: string; description: string } {
     const s = skill.toLowerCase();

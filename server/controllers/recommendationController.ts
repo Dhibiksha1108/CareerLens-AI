@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/index.js';
 import { RecommendationService } from '../services/recommendationService.js';
+import { BenchmarkingService } from '../services/benchmarkingService.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 
 export class RecommendationController {
@@ -59,6 +60,19 @@ export class RecommendationController {
       sendSuccess(res, 'Project status updated successfully', rec);
     } catch (error: any) {
       sendError(res, error.message || 'Failed to update project status', null, 500);
+    }
+  }
+
+  static async getCareerBenchmark(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const roleName = (req.query.role as string) || (req.body?.role as string);
+      const benchmark = await BenchmarkingService.getCareerBenchmark(
+        req.user!.userId,
+        roleName
+      );
+      sendSuccess(res, 'Career benchmark retrieved successfully', benchmark);
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to retrieve career benchmark', null, 500);
     }
   }
 }

@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Sparkles,
   Map,
-  FileCheck2
+  FileCheck2,
+  BarChart3
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -361,6 +362,13 @@ export const RecommendationsPage: React.FC = () => {
               >
                 <FileCheck2 className="w-3.5 h-3.5 text-blue-600" />
                 <span>ATS Check</span>
+              </Link>
+              <Link
+                to={`/benchmarking?role=${encodeURIComponent(selectedRole.role)}`}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Benchmark</span>
               </Link>
               <Link
                 to={`/roadmap?role=${encodeURIComponent(selectedRole.role)}`}
