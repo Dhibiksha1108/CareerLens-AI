@@ -307,6 +307,144 @@ export class AnalyticsService {
       });
     });
 
+    // 11. Phase 5C: Readiness Visualization Data (Synthesized from Phase 4C Benchmarking & 5A Analytics)
+    const targetRoleThreshold = 85;
+    const gapToTargetThreshold = Math.max(targetRoleThreshold - overallReadiness, 0);
+    const readinessLevel: 'Job Ready' | 'Competitive' | 'Developing' =
+      overallReadiness >= 80 ? 'Job Ready' : overallReadiness >= 65 ? 'Competitive' : 'Developing';
+
+    // Strengths vs Gaps
+    const strengths = verifiedSkillsList.map((s: string) => ({
+      skill: s,
+      category: 'Verified Competency',
+      proficiency: 'Demonstrated'
+    }));
+
+    const gaps = gapsWithPriority.map((g: any) => ({
+      skill: g.skill,
+      category: g.category,
+      priority: g.priority,
+      estimatedHours: g.estimatedHours
+    }));
+
+    const strengthsVsGaps = {
+      strengthsCount: verifiedSkillsList.length,
+      gapsCount: missingSkillsList.length,
+      strengthsRatio: verifiedVsMissing.verifiedPercent,
+      strengths,
+      gaps
+    };
+
+    // Current vs Target-Role Multi-Metric Comparison
+    const domainScoresAvg = domainComparisons.length > 0
+      ? Math.round(domainComparisons.reduce((acc: number, d: any) => acc + d.candidateScore, 0) / domainComparisons.length)
+      : 65;
+
+    const currentVsTargetComparison = [
+      {
+        metric: 'Technical Skills Fit',
+        candidateScore: selectedRoleMatch,
+        targetExpectation: 90,
+        industryAverage: 70
+      },
+      {
+        metric: 'Domain Architecture',
+        candidateScore: domainScoresAvg,
+        targetExpectation: 85,
+        industryAverage: 68
+      },
+      {
+        metric: 'Portfolio Deliverables',
+        candidateScore: portfolioReadinessScore,
+        targetExpectation: 80,
+        industryAverage: 65
+      },
+      {
+        metric: 'Roadmap Milestone Mastery',
+        candidateScore: overallMilestoneProgress.percent,
+        targetExpectation: 85,
+        industryAverage: 60
+      }
+    ];
+
+    // Industry Benchmark Summary across Domains
+    const domCandAvg = domainComparisons.length > 0
+      ? Math.round(domainComparisons.reduce((acc: number, d: any) => acc + d.candidateScore, 0) / domainComparisons.length)
+      : overallReadiness;
+    const domIndAvg = domainComparisons.length > 0
+      ? Math.round(domainComparisons.reduce((acc: number, d: any) => acc + d.industryAverage, 0) / domainComparisons.length)
+      : industryBaseline;
+    const domTgtAvg = domainComparisons.length > 0
+      ? Math.round(domainComparisons.reduce((acc: number, d: any) => acc + d.targetExpectation, 0) / domainComparisons.length)
+      : 82;
+
+    const industryBenchmarkSummary = {
+      candidateAverage: domCandAvg,
+      industryAverage: domIndAvg,
+      targetAverage: domTgtAvg,
+      domains: domainComparisons
+    };
+
+    // Readiness Improvement & Potential Levers
+    const keyImprovementLevers = [
+      ...highGaps.map((g: any) => ({
+        title: `Bridge ${g.skill} High Priority Gap`,
+        category: 'Skill Acquisition',
+        gainPercent: 8
+      })),
+      ...medGaps.slice(0, 2).map((g: any) => ({
+        title: `Reinforce ${g.skill} Core Practice`,
+        category: 'Applied Knowledge',
+        gainPercent: 5
+      })),
+      {
+        title: `Deploy ${targetRole} Capstone Project`,
+        category: 'Portfolio Evidence',
+        gainPercent: 7
+      }
+    ].slice(0, 4);
+
+    const improvementPotential = {
+      currentReadiness: overallReadiness,
+      projectedReadiness: Math.min(overallReadiness + potentialUplift, 98),
+      potentialGain: potentialUplift,
+      levers: keyImprovementLevers
+    };
+
+    // Role-Specific Readiness Across All Market Roles
+    const roleReadinessComparison = (rec?.recommendedRoles || []).map((r: any) => {
+      const m = (r.matchedSkills || []).length;
+      const miss = (r.missingSkills || []).length;
+      const total = m + miss;
+      const matchPct = total > 0 ? Math.round((m / total) * 100) : (typeof r.matchPercentage === 'number' ? r.matchPercentage : 0);
+      const isSel = r.role.trim().toLowerCase() === normalizedTarget ||
+        r.role.toLowerCase().replace(/\s+/g, '') === normalizedTarget.replace(/\s+/g, '');
+      const rReadiness = isSel
+        ? overallReadiness
+        : Math.min(Math.max(Math.round(matchPct * 0.70 + portfolioReadinessScore * 0.18 + 12), matchPct > 0 ? matchPct : 5), 98);
+
+      return {
+        role: r.role,
+        readinessScore: rReadiness,
+        matchPercentage: matchPct,
+        isSelected: isSel,
+        status: rReadiness >= 75 ? 'Strong Fit' : rReadiness >= 45 ? 'Developing' : 'Growth Area'
+      };
+    });
+
+    const readinessVisualization = {
+      overallScore: overallReadiness,
+      targetRoleThreshold,
+      gapToTargetThreshold,
+      readinessLevel,
+      candidatePercentile,
+      strengthsVsGaps,
+      currentVsTargetComparison,
+      industryBenchmarkSummary,
+      improvementPotential,
+      roleReadinessComparison
+    };
+
     return {
       targetRole,
       availableRoles,
@@ -347,7 +485,8 @@ export class AnalyticsService {
         categoryCoverage,
         roleSkillCoverage,
         milestoneSkillProgress
-      }
+      },
+      readinessVisualization
     };
   }
 }

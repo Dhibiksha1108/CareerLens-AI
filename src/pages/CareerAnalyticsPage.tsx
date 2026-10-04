@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import type { ICareerAnalyticsData } from '../types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { ReadinessVisualizationView } from '../components/analytics/ReadinessVisualizationView';
 import {
   BarChart,
   Bar,
@@ -50,7 +51,13 @@ import {
 
 export const CareerAnalyticsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const roleFromUrl = searchParams.get('role');
+  const tabFromUrl = searchParams.get('tab');
+
+  const initialTab = (tabFromUrl === 'readiness' || location.pathname.includes('readiness'))
+    ? 'readiness'
+    : (tabFromUrl === 'charts' ? 'charts' : 'analytics');
 
   const [analytics, setAnalytics] = useState<ICareerAnalyticsData | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>(roleFromUrl || '');
@@ -61,7 +68,7 @@ export const CareerAnalyticsPage: React.FC = () => {
   // Phase 5B Interactive Filter States
   const [skillSearchQuery, setSkillSearchQuery] = useState('');
   const [skillStatusFilter, setSkillStatusFilter] = useState<'all' | 'verified' | 'missing'>('all');
-  const [activeChartTab, setActiveChartTab] = useState<'analytics' | 'charts' | 'matrix'>('analytics');
+  const [activeChartTab, setActiveChartTab] = useState<'analytics' | 'charts' | 'readiness' | 'matrix'>(initialTab);
 
   // Fetch Career Analytics data from API
   const fetchAnalytics = async (roleName?: string) => {
@@ -173,7 +180,7 @@ export const CareerAnalyticsPage: React.FC = () => {
                 Career Analytics & Skill Charts
               </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
-                Phase 5A + 5B
+                Phase 5A + 5B + 5C
               </span>
             </div>
             <p className="text-xs text-slate-500">
@@ -257,10 +264,11 @@ export const CareerAnalyticsPage: React.FC = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex border-b border-slate-200 bg-white rounded-t-2xl px-4 pt-2">
+      <div className="flex border-b border-slate-200 bg-white rounded-t-2xl px-4 pt-2 overflow-x-auto">
         {[
           { id: 'analytics', label: 'Career Analytics Overview (5A)', icon: TrendingUp },
           { id: 'charts', label: 'Interactive Skill Charts (5B)', icon: PieChart },
+          { id: 'readiness', label: 'Readiness Visualization (5C)', icon: ShieldCheck },
           { id: 'matrix', label: `Role Competency Matrix (${skillChartsData.roleSkillCoverage.length})`, icon: Layers }
         ].map(tab => {
           const Icon = tab.icon;
@@ -714,7 +722,15 @@ export const CareerAnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: ROLE COMPETENCY MATRIX (Detailed Skill Coverage) */}
+      {/* TAB 3: 5C — READINESS VISUALIZATION */}
+      {activeChartTab === 'readiness' && (
+        <ReadinessVisualizationView
+          analytics={analytics}
+          onSelectRole={handleRoleChange}
+        />
+      )}
+
+      {/* TAB 4: ROLE COMPETENCY MATRIX (Detailed Skill Coverage) */}
       {activeChartTab === 'matrix' && (
         <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">

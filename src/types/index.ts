@@ -619,4 +619,49 @@ export interface ICareerAnalyticsData {
       description: string;
     }>;
   };
+  readinessVisualization: {
+    overallScore: number;
+    targetRoleThreshold: number;
+    gapToTargetThreshold: number;
+    readinessLevel: 'Job Ready' | 'Competitive' | 'Developing';
+    candidatePercentile: string;
+    strengthsVsGaps: {
+      strengthsCount: number;
+      gapsCount: number;
+      strengthsRatio: number;
+      strengths: Array<{ skill: string; category: string; proficiency: string }>;
+      gaps: Array<{ skill: string; category: string; priority: 'high' | 'medium' | 'low'; estimatedHours: number }>;
+    };
+    currentVsTargetComparison: Array<{
+      metric: string;
+      candidateScore: number;
+      targetExpectation: number;
+      industryAverage: number;
+    }>;
+    industryBenchmarkSummary: {
+      candidateAverage: number;
+      industryAverage: number;
+      targetAverage: number;
+      domains: Array<{
+        domain: string;
+        candidateScore: number;
+        industryAverage: number;
+        targetExpectation: number;
+        status: 'exceeds' | 'meets' | 'below';
+      }>;
+    };
+    improvementPotential: {
+      currentReadiness: number;
+      projectedReadiness: number;
+      potentialGain: number;
+      levers: Array<{ title: string; category: string; gainPercent: number }>;
+    };
+    roleReadinessComparison: Array<{
+      role: string;
+      readinessScore: number;
+      matchPercentage: number;
+      isSelected: boolean;
+      status: string;
+    }>;
+  };
 }
