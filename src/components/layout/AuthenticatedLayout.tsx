@@ -20,7 +20,9 @@ import {
   Mountain,
   Sparkles,
   FileCheck2,
-  BarChart3
+  BarChart3,
+  Clock,
+  Activity
 } from 'lucide-react';
 
 interface AuthenticatedLayoutProps {
@@ -49,7 +51,8 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
     { label: 'Recommendations', path: '/recommendations', icon: Lightbulb },
     { label: 'Career Roadmap', path: '/roadmap', icon: Map },
     { label: 'Benchmarking', path: '/benchmarking', icon: BarChart2 },
-    { label: 'Career Analytics', path: '/analytics', altPaths: ['/charts', '/skill-charts', '/readiness', '/readiness-visualization'], icon: BarChart3 },
+    { label: 'Career Analytics', path: '/analytics', altPaths: ['/charts', '/skill-charts', '/readiness', '/readiness-visualization', '/executive-dashboard'], icon: BarChart3 },
+    { label: 'Progress Tracking', path: '/progress', altPaths: ['/progress-tracking'], icon: Clock },
     { label: 'Improvement Simulator', path: '/simulator', icon: SlidersHorizontal }
   ];
 

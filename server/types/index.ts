@@ -402,4 +402,72 @@ export interface ICareerAnalyticsData {
       status: string;
     }>;
   };
+  progressTracking: {
+    roadmapMilestones: {
+      totalMilestones: number;
+      completedMilestones: number;
+      remainingMilestones: number;
+      percentComplete: number;
+      stages: Array<{
+        stageNumber: number;
+        title: string;
+        total: number;
+        completed: number;
+        remaining: number;
+        percent: number;
+      }>;
+      milestonesList: Array<{
+        skill: string;
+        description: string;
+        completed: boolean;
+        stage: number;
+      }>;
+    };
+    skillAcquisition: {
+      totalSkillsRequired: number;
+      acquiredSkillsCount: number;
+      remainingSkillsCount: number;
+      acquisitionRate: number;
+      highPriorityRemaining: number;
+      mediumPriorityRemaining: number;
+      lowPriorityRemaining: number;
+      remainingLearningHours: number;
+      acquiredSkills: Array<{ skill: string; category: string }>;
+      remainingSkills: Array<{ skill: string; priority: 'high' | 'medium' | 'low'; estimatedHours: number }>;
+    };
+    practicalProjects: {
+      totalProjects: number;
+      completedCount: number;
+      inProgressCount: number;
+      remainingCount: number;
+      completionPercentage: number;
+      projectsList: Array<{
+        title: string;
+        targetSkill: string;
+        difficulty: string;
+        status: 'completed' | 'in_progress' | 'missing';
+        estimatedHours: number;
+        deliverablesCount: number;
+      }>;
+    };
+    portfolioEvidence: {
+      overallEvidenceScore: number;
+      verifiedProofCount: number;
+      missingProofCount: number;
+      evidenceRate: number;
+      evidenceSources: Array<{ source: string; count: number; verified: boolean }>;
+    };
+    overallReadinessProgress: {
+      currentReadiness: number;
+      targetThreshold: number;
+      distanceToTarget: number;
+      potentialCeiling: number;
+      projectedUplift: number;
+      trajectoryStages: Array<{
+        stage: string;
+        score: number;
+        status: 'completed' | 'current' | 'projected';
+      }>;
+    };
+  };
 }

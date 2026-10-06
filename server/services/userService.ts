@@ -11,6 +11,13 @@ export class UserService {
     if (updates.password) {
       delete updates.password; // Do not allow password updates through profile endpoint
     }
+    if (updates.skills && Array.isArray(updates.skills)) {
+      updates.skills = updates.skills.map((s: any) =>
+        typeof s === 'string'
+          ? { name: s, category: 'Technical', proficiencyLevel: 'intermediate' }
+          : s
+      );
+    }
     const user = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
     if (!user) throw new Error('User not found');
     return user;
@@ -18,7 +25,13 @@ export class UserService {
 
   static async updateTargetRoles(userId: string, targetRoles: string[], skills?: any[]) {
     const updates: any = { targetRoles };
-    if (skills) updates.skills = skills;
+    if (skills && Array.isArray(skills)) {
+      updates.skills = skills.map((s: any) =>
+        typeof s === 'string'
+          ? { name: s, category: 'Technical', proficiencyLevel: 'intermediate' }
+          : s
+      );
+    }
 
     const user = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');
     if (!user) throw new Error('User not found');

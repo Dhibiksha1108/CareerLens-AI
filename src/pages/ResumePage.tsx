@@ -3,7 +3,6 @@ import { apiClient } from '../services/apiClient';
 import type { ResumeRecord, NlpAnalysisResult, SkillCategory, ExtractedSkill } from '../types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EmptyState } from '../components/common/EmptyState';
-import { AtsReadabilityAnalyzer } from '../components/resume/AtsReadabilityAnalyzer';
 import {
   FileText,
   Upload,
@@ -20,8 +19,7 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  Tag,
-  FileCheck2
+  Tag
 } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<SkillCategory, { bg: string; text: string; border: string }> = {
@@ -47,7 +45,7 @@ export const ResumePage: React.FC = () => {
   const [activeResume, setActiveResume] = useState<ResumeRecord | null>(null);
   const [analysisResult, setAnalysisResult] = useState<NlpAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'skills' | 'ats' | 'text'>('skills');
+  const [activeTab, setActiveTab] = useState<'skills' | 'text'>('skills');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedSnippets, setExpandedSnippets] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
@@ -424,21 +422,6 @@ export const ResumePage: React.FC = () => {
                     </span>
                   </button>
                   <button
-                    onClick={() => setActiveTab('ats')}
-                    className={`pb-2.5 px-3 text-xs font-bold transition-all relative ${
-                      activeTab === 'ats'
-                        ? 'text-emerald-700 border-b-2 border-emerald-600'
-                        : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <FileCheck2 className="w-3.5 h-3.5" /> ATS & Readability
-                      <span className="ml-1 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase">
-                        Phase 4B
-                      </span>
-                    </span>
-                  </button>
-                  <button
                     onClick={() => setActiveTab('text')}
                     className={`pb-2.5 px-3 text-xs font-bold transition-all relative ${
                       activeTab === 'text'
@@ -655,17 +638,7 @@ export const ResumePage: React.FC = () => {
                   </div>
                 )}
 
-                {/* TAB 2: ATS & Human Readability Analyzer (Phase 4B) */}
-                {activeTab === 'ats' && (
-                  <div className="pt-2">
-                    <AtsReadabilityAnalyzer
-                      initialResumeId={activeResume._id}
-                      onSelectResume={selectResume}
-                    />
-                  </div>
-                )}
-
-                {/* TAB 3: Extracted Raw Text */}
+                {/* TAB 2: Extracted Raw Text */}
                 {activeTab === 'text' && (
                   <div className="space-y-3">
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 font-mono text-xs text-slate-700 max-h-[460px] overflow-y-auto whitespace-pre-wrap leading-relaxed">

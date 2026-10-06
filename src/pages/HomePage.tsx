@@ -27,7 +27,8 @@ import {
   FileCheck2,
   Clock,
   Info,
-  ChevronRight
+  ChevronRight,
+  Activity
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -231,11 +232,18 @@ export const HomePage: React.FC<HomePageProps> = ({ user: initialUser }) => {
             <span>Phase 4C: Benchmarks</span>
           </Link>
           <Link
-            to={`/analytics?role=${encodeURIComponent(activeRoleName)}`}
+            to={`/analytics?role=${encodeURIComponent(activeRoleName)}&tab=dashboard`}
             className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
           >
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Phase 5A+5B: Analytics & Charts</span>
+            <Activity className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Phase 5E: Visual Dashboard</span>
+          </Link>
+          <Link
+            to={`/progress?role=${encodeURIComponent(activeRoleName)}`}
+            className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
+            <span>Phase 5D: Progress Tracking</span>
           </Link>
         </div>
       </div>

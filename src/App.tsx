@@ -14,6 +14,7 @@ import { BenchmarkingPage } from './pages/BenchmarkingPage';
 import { ImprovementSimulatorPage } from './pages/ImprovementSimulatorPage';
 import { AtsAnalyzerPage } from './pages/AtsAnalyzerPage';
 import { CareerAnalyticsPage } from './pages/CareerAnalyticsPage';
+import { ProgressTrackingPage } from './pages/ProgressTrackingPage';
 import { getAuthToken, setAuthToken, removeAuthToken } from './utils/token';
 import { apiClient } from './services/apiClient';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
@@ -98,6 +99,9 @@ export const App: React.FC = () => {
           <Route path="/skill-charts" element={<CareerAnalyticsPage />} />
           <Route path="/readiness" element={<CareerAnalyticsPage />} />
           <Route path="/readiness-visualization" element={<CareerAnalyticsPage />} />
+          <Route path="/progress" element={<ProgressTrackingPage />} />
+          <Route path="/progress-tracking" element={<ProgressTrackingPage />} />
+          <Route path="/executive-dashboard" element={<CareerAnalyticsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthenticatedLayout>

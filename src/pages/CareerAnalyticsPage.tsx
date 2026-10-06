@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import type { ICareerAnalyticsData } from '../types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ReadinessVisualizationView } from '../components/analytics/ReadinessVisualizationView';
+import { ExecutiveDashboardView } from '../components/analytics/ExecutiveDashboardView';
 import {
   BarChart,
   Bar,
@@ -52,12 +53,20 @@ import {
 export const CareerAnalyticsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const roleFromUrl = searchParams.get('role');
   const tabFromUrl = searchParams.get('tab');
 
-  const initialTab = (tabFromUrl === 'readiness' || location.pathname.includes('readiness'))
-    ? 'readiness'
-    : (tabFromUrl === 'charts' ? 'charts' : 'analytics');
+  const initialTab: 'dashboard' | 'analytics' | 'charts' | 'readiness' | 'matrix' =
+    (tabFromUrl === 'readiness' || location.pathname.includes('readiness'))
+      ? 'readiness'
+      : (tabFromUrl === 'charts' || location.pathname.includes('chart'))
+      ? 'charts'
+      : (tabFromUrl === 'analytics')
+      ? 'analytics'
+      : (tabFromUrl === 'matrix')
+      ? 'matrix'
+      : 'dashboard';
 
   const [analytics, setAnalytics] = useState<ICareerAnalyticsData | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>(roleFromUrl || '');
@@ -68,7 +77,33 @@ export const CareerAnalyticsPage: React.FC = () => {
   // Phase 5B Interactive Filter States
   const [skillSearchQuery, setSkillSearchQuery] = useState('');
   const [skillStatusFilter, setSkillStatusFilter] = useState<'all' | 'verified' | 'missing'>('all');
-  const [activeChartTab, setActiveChartTab] = useState<'analytics' | 'charts' | 'readiness' | 'matrix'>(initialTab);
+  const [activeChartTab, setActiveChartTab] = useState<'dashboard' | 'analytics' | 'charts' | 'readiness' | 'matrix'>(initialTab);
+
+  // Synchronize tab state if URL tab or route changes; redirect progress to standalone Progress Tracking
+  useEffect(() => {
+    if (tabFromUrl === 'progress') {
+      const targetQuery = selectedRole || roleFromUrl;
+      navigate(targetQuery ? `/progress?role=${encodeURIComponent(targetQuery)}` : '/progress', { replace: true });
+      return;
+    }
+    if (tabFromUrl && ['dashboard', 'analytics', 'charts', 'readiness', 'matrix'].includes(tabFromUrl)) {
+      setActiveChartTab(tabFromUrl as any);
+    } else if (location.pathname.includes('readiness')) {
+      setActiveChartTab('readiness');
+    } else if (location.pathname.includes('chart')) {
+      setActiveChartTab('charts');
+    }
+  }, [tabFromUrl, location.pathname, selectedRole, roleFromUrl, navigate]);
+
+  const handleTabChange = (newTab: 'dashboard' | 'analytics' | 'charts' | 'readiness' | 'matrix') => {
+    setActiveChartTab(newTab);
+    const roleToKeep = selectedRole || roleFromUrl;
+    if (roleToKeep) {
+      setSearchParams({ role: roleToKeep, tab: newTab });
+    } else {
+      setSearchParams({ tab: newTab });
+    }
+  };
 
   // Fetch Career Analytics data from API
   const fetchAnalytics = async (roleName?: string) => {
@@ -100,7 +135,7 @@ export const CareerAnalyticsPage: React.FC = () => {
   // Handle Target Role change
   const handleRoleChange = async (newRole: string) => {
     setSelectedRole(newRole);
-    setSearchParams({ role: newRole });
+    setSearchParams({ role: newRole, tab: activeChartTab });
     setRefreshing(true);
     await fetchAnalytics(newRole);
   };
@@ -180,11 +215,11 @@ export const CareerAnalyticsPage: React.FC = () => {
                 Career Analytics & Skill Charts
               </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
-                Phase 5A + 5B + 5C
+                Phase 5 Complete (5A–5E)
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Interactive visual analytics covering career readiness trajectories, role compatibility benchmarks, skill distributions, and portfolio progression.
+              Interactive visual analytics covering career readiness trajectories, role compatibility benchmarks, skill distributions, progress tracking, and executive intelligence.
             </p>
           </div>
 
@@ -260,12 +295,20 @@ export const CareerAnalyticsPage: React.FC = () => {
             <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Phase 4B: ATS Check</span>
           </Link>
+          <Link
+            to={`/progress?role=${encodeURIComponent(targetRole)}`}
+            className="px-2.5 py-1 bg-slate-50 hover:bg-amber-50 border border-slate-200 text-slate-700 hover:text-amber-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span>Phase 5D: Progress Tracking</span>
+          </Link>
         </div>
       </div>
 
       {/* Navigation Sub-Tabs */}
       <div className="flex border-b border-slate-200 bg-white rounded-t-2xl px-4 pt-2 overflow-x-auto">
         {[
+          { id: 'dashboard', label: 'Executive Dashboard (5E)', icon: Activity },
           { id: 'analytics', label: 'Career Analytics Overview (5A)', icon: TrendingUp },
           { id: 'charts', label: 'Interactive Skill Charts (5B)', icon: PieChart },
           { id: 'readiness', label: 'Readiness Visualization (5C)', icon: ShieldCheck },
@@ -276,7 +319,7 @@ export const CareerAnalyticsPage: React.FC = () => {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveChartTab(tab.id as any)}
+              onClick={() => handleTabChange(tab.id as any)}
               className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-1.5 ${
                 isActive
                   ? 'text-emerald-700 border-b-2 border-emerald-600'
@@ -289,6 +332,15 @@ export const CareerAnalyticsPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* TAB 0: 5E — EXECUTIVE INTERACTIVE DASHBOARD */}
+      {activeChartTab === 'dashboard' && (
+        <ExecutiveDashboardView
+          analytics={analytics}
+          onSelectRole={handleRoleChange}
+          onNavigateTab={setActiveChartTab}
+        />
+      )}
 
       {/* TAB 1: 5A — CAREER ANALYTICS */}
       {activeChartTab === 'analytics' && (
