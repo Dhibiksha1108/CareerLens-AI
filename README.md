@@ -40,50 +40,68 @@ It analyzes available resume information, verified skill evidence, projects, and
 
 ## 🔄 Core Workflow
 
-```text
-Analyze → Verify → Identify Gaps → Recommend → Improve
+<p align="center">
+  <strong>Analyze → Verify → Identify Gaps → Recommend → Improve</strong>
+</p>
 
-✨ Key Features
-📄 Resume Analysis
-Upload resumes in supported formats.
-Extract resume text and technical skills.
-Analyze resume content and skill evidence.
-🎯 ATS & Readability Analysis
-Evaluate resume compatibility.
-Analyze readability and content quality.
-Identify areas for improvement.
-💼 Job Compatibility
-Compare resumes against target job descriptions.
-Identify matching and missing skills.
-Generate compatibility insights.
-🧠 Skills & Evidence
-Organize extracted and verified skills.
-Identify skill gaps.
-Connect technical competencies with available evidence.
-🚀 Projects & Technical Portfolio
-Showcase technical projects.
-Associate projects with relevant technologies.
-Connect project evidence with career skills.
-💡 Career Recommendations
-Explore suitable career roles.
-Identify prioritized skill gaps.
-Receive role-specific improvement recommendations.
-🗺️ Career Roadmaps
-Explore personalized learning roadmaps.
-Organize learning goals and milestones.
-Discover practical projects for skill development.
-📊 Career Benchmarking & Analytics
-Examine technical competency domains.
-Compare skills against target-role expectations.
-Visualize career readiness and improvement areas.
-📈 Progress Tracking
-Track roadmap milestones.
-Monitor skill acquisition.
-Follow project and portfolio progress.
-⚡ Portfolio Improvement Simulator
-Simulate potential skill improvements.
-Explore the impact of projects and certifications.
-Compare current and projected career alignment.
+---
+
+## ✨ Key Features
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>📄 Resume Analysis</h3>
+      Extract resume text, identify technical skills, and analyze resume content.
+    </td>
+    <td width="50%">
+      <h3>🎯 ATS & Readability</h3>
+      Evaluate resume compatibility, readability, and content quality.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>💼 Job Compatibility</h3>
+      Compare resumes with job descriptions and identify matching and missing skills.
+    </td>
+    <td width="50%">
+      <h3>🧠 Skills & Evidence</h3>
+      Track verified skills, identify gaps, and connect competencies with evidence.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🚀 Projects & Portfolio</h3>
+      Showcase technical projects and connect project evidence with relevant skills.
+    </td>
+    <td width="50%">
+      <h3>💡 Career Recommendations</h3>
+      Discover suitable roles and receive prioritized improvement recommendations.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🗺️ Career Roadmaps</h3>
+      Explore personalized learning paths, milestones, and practical projects.
+    </td>
+    <td width="50%">
+      <h3>📊 Career Benchmarking</h3>
+      Compare technical competencies against target-role expectations.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📈 Progress Tracking</h3>
+      Monitor learning milestones, skill acquisition, and project progress.
+    </td>
+    <td width="50%">
+      <h3>⚡ Improvement Simulator</h3>
+      Simulate potential skill improvements and compare projected career alignment.
+    </td>
+  </tr>
+</table>
+
+---
 🏗️ System Architecture
 
 CareerLens AI uses a React frontend, a Node.js and Express backend, and MongoDB for persistent data storage.
