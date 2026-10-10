@@ -1,112 +1,44 @@
 # CareerLens AI: An Intelligent Career Profile Analysis and Recommendation Platform
 
-CareerLens AI is an intelligent profile analysis and career recommendation engine designed specifically for Computer Science & Engineering (CSE) students and tech professionals.
+<p align="center">
+  <strong>Analyze → Verify → Identify Gaps → Recommend → Improve</strong>
+</p>
 
-## Core Core Workflow
+<p align="center">
+  An intelligent career analysis and recommendation platform designed for Computer Science & Engineering (CSE) students and technology professionals.
+</p>
 
-$$\text{Analyze} \longrightarrow \text{Verify} \longrightarrow \text{Identify Gaps} \longrightarrow \text{Recommend} \longrightarrow \text{Improve}$$
-
-CareerLens AI evaluates user:
-- Resumes & Portfolios
-- GitHub Repositories & Language Stats
-- Project Quality, Architecture, and Testing
-- Skills & Evidence Verification
-- Target Job Descriptions
-
-It generates:
-- Strengths & Skill Evidence Strengths
-- Granular Skill Gaps (Required vs Matching vs Missing vs Partial)
-- Job Compatibility Benchmarks
-- Prioritized Project & Learning Recommendations
-- Interactive Career Roadmaps & Readiness Simulations
+<p align="center">
+  <a href="https://careerlens-ai-sxvt.onrender.com">
+    <img src="https://img.shields.io/badge/🚀_Live_Demo-CareerLens_AI-00A878?style=for-the-badge" alt="Live Demo">
+  </a>
+  <img src="https://img.shields.io/badge/Frontend-React_19-blue?style=for-the-badge&logo=react" alt="React">
+  <img src="https://img.shields.io/badge/Backend-Node.js-green?style=for-the-badge&logo=nodedotjs" alt="Node.js">
+  <img src="https://img.shields.io/badge/Database-MongoDB-47A248?style=for-the-badge&logo=mongodb" alt="MongoDB">
+  <img src="https://img.shields.io/badge/Deployment-Render-46E3B7?style=for-the-badge&logo=render" alt="Render">
+</p>
 
 ---
 
-## 🏗️ Repository Architecture
+## 🚀 Live Demo
+
+**Explore CareerLens AI online:**
+
+### 👉 [Launch CareerLens AI](https://careerlens-ai-sxvt.onrender.com)
+
+CareerLens AI helps users analyze their career profiles, identify skill gaps, evaluate job compatibility, and discover personalized learning opportunities.
+
+> **Note:** The application is hosted on Render's free tier. The first request after a period of inactivity may take some time to load.
+
+---
+
+## 📌 About the Project
+
+CareerLens AI is an intelligent profile analysis and career recommendation platform designed specifically for CSE students and technology professionals.
+
+It analyzes available resume information, verified skill evidence, projects, and target job requirements to provide career insights and actionable improvement recommendations.
+
+## 🔄 Core Workflow
 
 ```text
-CareerLens/
-├── frontend/             # React + Vite + TypeScript + Tailwind CSS UI
-├── backend/              # Node.js + Express.js + TypeScript REST API
-├── ai-service/           # Python FastAPI NLP & AI Analysis Service (Microservice Skeleton)
-├── docs/                 # System Architecture & API Specifications
-├── .env.example          # Unified Environment Variables Blueprint
-└── README.md             # Project Master Documentation
-```
-
----
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework**: React 19 + Vite
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-- **Routing**: React Router v7
-- **Icons**: Lucide React
-- **Visualizations**: Recharts
-- **Animations**: Framer Motion
-
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: MongoDB + Mongoose ORM
-- **Authentication**: JWT (JSON Web Tokens) + Bcrypt.js
-
-### Microservices / AI
-- **Framework**: Python FastAPI
-- **Architecture**: `React → Express API → AI/NLP Service → MongoDB`
-
----
-
-## 🚀 Quick Start Guide
-
-### Prerequisites
-- Node.js (v18+)
-- MongoDB (Running locally or MongoDB Atlas URI)
-- Python 3.10+ (for AI microservice)
-
-### 1. Setup Backend
-```bash
-cd backend
-cp ../.env.example .env
-npm install
-npm run dev
-```
-Backend runs on `http://localhost:5000`
-
-### 2. Setup Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend runs on `http://localhost:5173`
-
-### 3. Setup AI Service (Optional / Future Integration)
-```bash
-cd ai-service
-python -m venv venv
-# Windows: venv\Scripts\activate | Unix: source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-AI Microservice runs on `http://localhost:8000`
-
----
-
-## 📜 REST API Overview
-
-- `/api/auth` — Authentication & JWT Session management
-- `/api/users` — User profile management & target roles
-- `/api/resume` — Resume file ingestion & text analysis
-- `/api/portfolio` — Portfolio scraping & project detection
-- `/api/github` — GitHub repository & contribution statistics sync
-- `/api/projects` — Engineering project showcase & artifact analysis
-- `/api/jobs` — Job description skill matching & gap analysis
-- `/api/skills` — Multi-source skill evidence matrix & verification
-- `/api/recommendations` — Prioritized learning & project recommendations
-- `/api/roadmap` — Progressive career stage roadmaps
-- `/api/benchmarking` — Peer & market compatibility benchmarks
-- `/api/simulator` — Skill readiness simulator
+Analyze → Verify → Identify Gaps → Recommend → Improve
