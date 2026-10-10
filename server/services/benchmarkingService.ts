@@ -3,7 +3,7 @@ import { User } from '../models/User.js';
 import { Resume } from '../models/Resume.js';
 import { SkillEvidence } from '../models/SkillEvidence.js';
 import { CareerRecommendation } from '../models/CareerRecommendation.js';
-import { RecommendationService } from './recommendationService.js';
+import { RecommendationService, ROLE_TAXONOMY } from './recommendationService.js';
 import {
   ICareerBenchmarkResult,
   IDomainBenchmark,
@@ -45,6 +45,50 @@ const DOMAIN_TAXONOMY: Record<string, { name: string; skills: string[]; baseline
   }
 };
 
+interface IRoleBenchmarkConfig {
+  targetExpectations: Record<string, number>;
+  industryAverages: Record<string, number>;
+  domainWeights: Record<string, number>;
+}
+
+const ROLE_BENCHMARK_CONFIGS: Record<string, IRoleBenchmarkConfig> = {
+  'Full Stack Developer': {
+    targetExpectations: { frontend: 88, backend: 86, database: 82, devops: 76, data_ai: 55 },
+    industryAverages: { frontend: 72, backend: 70, database: 68, devops: 64, data_ai: 62 },
+    domainWeights: { frontend: 0.30, backend: 0.30, database: 0.20, devops: 0.15, data_ai: 0.05 }
+  },
+  'Data Analyst': {
+    targetExpectations: { frontend: 55, backend: 45, database: 85, devops: 45, data_ai: 90 },
+    industryAverages: { frontend: 65, backend: 62, database: 70, devops: 58, data_ai: 68 },
+    domainWeights: { frontend: 0.10, backend: 0.05, database: 0.30, devops: 0.05, data_ai: 0.50 }
+  },
+  'Backend Engineer': {
+    targetExpectations: { frontend: 40, backend: 92, database: 88, devops: 82, data_ai: 55 },
+    industryAverages: { frontend: 62, backend: 72, database: 70, devops: 66, data_ai: 60 },
+    domainWeights: { frontend: 0.05, backend: 0.40, database: 0.30, devops: 0.20, data_ai: 0.05 }
+  },
+  'Data Engineer': {
+    targetExpectations: { frontend: 35, backend: 80, database: 90, devops: 82, data_ai: 92 },
+    industryAverages: { frontend: 60, backend: 68, database: 72, devops: 66, data_ai: 68 },
+    domainWeights: { frontend: 0.05, backend: 0.20, database: 0.35, devops: 0.15, data_ai: 0.25 }
+  },
+  'DevOps / Cloud Engineer': {
+    targetExpectations: { frontend: 35, backend: 78, database: 75, devops: 94, data_ai: 45 },
+    industryAverages: { frontend: 58, backend: 68, database: 66, devops: 70, data_ai: 58 },
+    domainWeights: { frontend: 0.05, backend: 0.20, database: 0.15, devops: 0.55, data_ai: 0.05 }
+  },
+  'Machine Learning Engineer': {
+    targetExpectations: { frontend: 35, backend: 80, database: 76, devops: 78, data_ai: 94 },
+    industryAverages: { frontend: 58, backend: 68, database: 68, devops: 64, data_ai: 70 },
+    domainWeights: { frontend: 0.05, backend: 0.20, database: 0.15, devops: 0.15, data_ai: 0.45 }
+  },
+  'Frontend Engineer': {
+    targetExpectations: { frontend: 94, backend: 65, database: 55, devops: 65, data_ai: 35 },
+    industryAverages: { frontend: 74, backend: 65, database: 62, devops: 62, data_ai: 55 },
+    domainWeights: { frontend: 0.55, backend: 0.20, database: 0.10, devops: 0.10, data_ai: 0.05 }
+  }
+};
+
 export class BenchmarkingService {
   /**
    * Generates a comprehensive career benchmarking report comparing candidate profile with target role expectations
@@ -57,7 +101,7 @@ export class BenchmarkingService {
     let rec: any = await CareerRecommendation.findOne({ userId }).sort({ updatedAt: -1 });
 
     if (!rec || !rec.recommendedRoles || rec.recommendedRoles.length === 0) {
-      rec = await RecommendationService.getRecommendations(userId);
+      rec = await RecommendationService.getRecommendations(userId, targetRoleParam);
     }
 
     // 1. Resolve Target Role
@@ -67,16 +111,20 @@ export class BenchmarkingService {
       (user?.targetRoles && user.targetRoles[0]) ||
       'Full Stack Developer';
 
+    // Look up canonical taxonomy for this role
+    const taxonomyMatch =
+      ROLE_TAXONOMY[targetRole] ||
+      Object.entries(ROLE_TAXONOMY).find(
+        ([k]) => k.toLowerCase() === targetRole.toLowerCase()
+      )?.[1] ||
+      ROLE_TAXONOMY['Full Stack Developer'];
+
+    const roleReqSkills = taxonomyMatch?.skills || [];
+
     // Find recommended role in Phase 2D data
     let roleObj = rec?.recommendedRoles?.find(
       (r: any) => r.role.trim().toLowerCase() === targetRole.trim().toLowerCase()
     );
-
-    if (!roleObj && rec?.recommendedRoles && rec.recommendedRoles.length > 0) {
-      roleObj = rec.recommendedRoles.find(
-        (r: any) => r.role.toLowerCase().replace(/\s+/g, '') === targetRole.toLowerCase().replace(/\s+/g, '')
-      ) || rec.recommendedRoles[0];
-    }
 
     // 2. Fetch candidate actual data: resumes, skill evidences
     const resumes = await Resume.find({ userId }).sort({ createdAt: -1 });
@@ -131,9 +179,35 @@ export class BenchmarkingService {
       }
     });
 
-    // 3. Compare with Role Expectations (Phase 2D data)
-    const expectedMatched = roleObj?.matchedSkills || [];
-    const expectedMissing = roleObj?.missingSkills || [];
+    // 3. Compute Role-Specific Meeting and Missing Skills based dynamically on the requested Target Role
+    const expectedMatched: string[] = [];
+    const expectedMissing: string[] = [];
+
+    roleReqSkills.forEach(reqSkill => {
+      const sKey = reqSkill.trim().toLowerCase();
+      if (candidateSkillMap.has(sKey)) {
+        expectedMatched.push(reqSkill);
+      } else {
+        expectedMissing.push(reqSkill);
+      }
+    });
+
+    // If roleObj has extra matched/missing, combine cleanly without duplicates
+    if (roleObj?.matchedSkills) {
+      roleObj.matchedSkills.forEach((s: string) => {
+        if (!expectedMatched.includes(s) && candidateSkillMap.has(s.toLowerCase())) {
+          expectedMatched.push(s);
+        }
+      });
+    }
+    if (roleObj?.missingSkills) {
+      roleObj.missingSkills.forEach((s: string) => {
+        if (!expectedMatched.includes(s) && !expectedMissing.includes(s)) {
+          expectedMissing.push(s);
+        }
+      });
+    }
+
     const totalExpectedSkills = Math.max(expectedMatched.length + expectedMissing.length, 1);
 
     // Build Meeting Skills List
@@ -152,7 +226,7 @@ export class BenchmarkingService {
       else if (['Node.js', 'Express', 'Python', 'REST API', 'GraphQL'].includes(skill)) category = 'Backend';
       else if (['PostgreSQL', 'SQL', 'MongoDB', 'Redis'].includes(skill)) category = 'Database';
       else if (['Docker', 'Kubernetes', 'AWS', 'CI/CD', 'Git', 'Linux'].includes(skill)) category = 'DevOps/Cloud';
-      else if (['Power BI', 'Tableau', 'Machine Learning', 'Pandas', 'Statistics'].includes(skill)) category = 'Data/AI';
+      else if (['Power BI', 'Tableau', 'Machine Learning', 'Pandas', 'Statistics', 'Data Visualization', 'EDA'].includes(skill)) category = 'Data/AI';
 
       return {
         skill,
@@ -167,13 +241,19 @@ export class BenchmarkingService {
     // Build Missing Skills List with Phase 2D priority gaps
     const roleSkillGaps = roleObj?.skillGaps || [];
     const missingSkills = expectedMissing.map((skill, idx) => {
-      const existingGap = roleSkillGaps.find(g => g.skill.toLowerCase() === skill.toLowerCase());
+      const existingGap = roleSkillGaps.find((g: any) => g.skill.toLowerCase() === skill.toLowerCase());
       const priority: 'high' | 'medium' | 'low' = existingGap?.priority || (idx < 2 ? 'high' : idx < 4 ? 'medium' : 'low');
-      const category = existingGap?.category || 'Technical Competency';
+      const category = existingGap?.category || (
+        ['Docker', 'Kubernetes', 'AWS', 'CI/CD', 'Terraform', 'Linux'].includes(skill) ? 'DevOps & Cloud' :
+        ['Apache Spark', 'Kafka', 'Airflow', 'ETL', 'Data Warehousing'].includes(skill) ? 'Data Engineering' :
+        ['Power BI', 'Tableau', 'Statistics', 'Pandas', 'Machine Learning'].includes(skill) ? 'Data & Analytics' :
+        ['React', 'TypeScript', 'CSS', 'HTML'].includes(skill) ? 'Frontend Engineering' :
+        'Technical Competency'
+      );
       const demandFrequency = existingGap?.demandFrequency || (priority === 'high' ? 3 : 2);
-      const recommendedLearningArea = existingGap?.recommendedLearningArea || `Practical implementation and architectural design with ${skill}.`;
+      const recommendedLearningArea = existingGap?.recommendedLearningArea || `Practical implementation and architectural design with ${skill} for ${targetRole}.`;
       const estimatedHours = existingGap?.estimatedHours || (priority === 'high' ? 30 : 20);
-      const suggestedProject = existingGap?.suggestedProjects?.[0] || `Hands-on ${skill} Production Verification Project for ${targetRole}`;
+      const suggestedProject = existingGap?.suggestedProjects?.[0] || `Production ${skill} Verification Project for ${targetRole}`;
 
       return {
         skill,
@@ -186,8 +266,15 @@ export class BenchmarkingService {
       };
     });
 
-    // 4. Compute Domain Competency Benchmarks (Radar/Bar metrics)
-    const domainBenchmarks: IDomainBenchmark[] = Object.entries(DOMAIN_TAXONOMY).map(([_, dom]) => {
+    // 4. Compute Dynamic Domain Competency Benchmarks tailored to the Target Role
+    const roleConfig =
+      ROLE_BENCHMARK_CONFIGS[targetRole] ||
+      Object.entries(ROLE_BENCHMARK_CONFIGS).find(
+        ([k]) => k.toLowerCase() === targetRole.toLowerCase()
+      )?.[1] ||
+      ROLE_BENCHMARK_CONFIGS['Full Stack Developer'];
+
+    const domainBenchmarks: IDomainBenchmark[] = Object.entries(DOMAIN_TAXONOMY).map(([domKey, dom]) => {
       const domainRelevantSkills = dom.skills;
       const verifiedInDomain: string[] = [];
       const missingInDomain: string[] = [];
@@ -200,13 +287,30 @@ export class BenchmarkingService {
         }
       });
 
-      // Calculate score for this domain based on verified competencies
-      const baseRatio = verifiedInDomain.length / Math.max(domainRelevantSkills.length * 0.6, 1);
-      const candidateScore = Math.min(Math.max(Math.round(baseRatio * 100), 20), 98);
+      // Role-specific target expectations and industry baselines
+      const industryAverage = roleConfig.industryAverages[domKey] || dom.baselineAvg;
+      const targetExpectation = roleConfig.targetExpectations[domKey] || dom.targetExpect;
 
-      // Industry average and role expectation adjustments
-      const industryAverage = dom.baselineAvg;
-      const targetExpectation = dom.targetExpect;
+      // Candidate score reflects demonstrated skills in this domain evaluated against role demands
+      const domainSkillsRequiredForRole = roleReqSkills.filter(s =>
+        dom.skills.some(ds => ds.toLowerCase() === s.toLowerCase())
+      );
+
+      let candidateScore: number;
+      if (domainSkillsRequiredForRole.length > 0) {
+        const matchedReqsInDomain = domainSkillsRequiredForRole.filter(s =>
+          candidateSkillMap.has(s.toLowerCase())
+        );
+        const reqMatchRatio = matchedReqsInDomain.length / domainSkillsRequiredForRole.length;
+        const generalDomainRatio = verifiedInDomain.length / Math.max(dom.skills.length * 0.5, 1);
+        candidateScore = Math.round(reqMatchRatio * 65 + generalDomainRatio * 35);
+      } else {
+        const generalDomainRatio = verifiedInDomain.length / Math.max(dom.skills.length * 0.5, 1);
+        candidateScore = Math.round(generalDomainRatio * 80);
+      }
+
+      // Clamp between 18% and 98%
+      candidateScore = Math.min(Math.max(candidateScore, 18), 98);
 
       let percentile = 'Developing';
       let status: 'exceeds' | 'meets' | 'below' = 'below';
@@ -236,13 +340,18 @@ export class BenchmarkingService {
     });
 
     // 5. Portfolio Gap Analysis (Comparing completed projects with role deliverables)
-    const roleProjects = roleObj?.practicalProjects || rec?.skillGaps?.flatMap(g => g.practicalProjects || []) || [];
+    let roleProjects = roleObj?.practicalProjects;
+    if (!roleProjects || roleProjects.length === 0) {
+      roleProjects = missingSkills.map(m =>
+        RecommendationService.getPracticalProjectForSkill(m.skill, targetRole, 'Intermediate')
+      );
+    }
+
     const resumeText = resumes[0]?.extractedText || '';
 
-    const portfolioGaps: IPortfolioGapItem[] = roleProjects.map(p => {
-      // Check if candidate resume or evidence mentions project's target skill
-      const hasSkill = candidateSkillMap.has(p.targetSkill.toLowerCase());
-      const mentionsInText = resumeText.toLowerCase().includes(p.targetSkill.toLowerCase());
+    const portfolioGaps: IPortfolioGapItem[] = (roleProjects || []).map((p: any) => {
+      const hasSkill = candidateSkillMap.has((p.targetSkill || '').toLowerCase());
+      const mentionsInText = resumeText.toLowerCase().includes((p.targetSkill || '').toLowerCase());
 
       const status: 'completed' | 'in_progress' | 'missing' = (hasSkill && mentionsInText)
         ? 'completed'
@@ -251,11 +360,11 @@ export class BenchmarkingService {
         : 'missing';
 
       return {
-        targetSkill: p.targetSkill,
-        recommendedProjectTitle: p.title,
-        difficulty: p.difficulty,
-        portfolioEvidence: p.portfolioEvidence,
-        estimatedHours: p.estimatedHours,
+        targetSkill: p.targetSkill || 'Technical Capability',
+        recommendedProjectTitle: p.title || `Practical ${p.targetSkill} Deliverable`,
+        difficulty: p.difficulty || 'Intermediate',
+        portfolioEvidence: p.portfolioEvidence || `Production architectural evidence demonstrating ${p.targetSkill}`,
+        estimatedHours: p.estimatedHours || 18,
         status,
         keyDeliverables: p.keyDeliverables || []
       };
@@ -292,12 +401,12 @@ export class BenchmarkingService {
       : `Emerging engineering profile (${detectedYears} years). Highlighting production portfolio evidence will bridge market experience filters.`;
 
     // 7. Roadmap Progress (Phase 3 connection)
-    const activeRoadmap = roleObj?.roadmap || rec?.roadmap || [];
+    const activeRoadmap = roleObj?.roadmap || RecommendationService.generateRoleRoadmap(targetRole, expectedMissing, expectedMatched);
     let totalMilestones = 0;
     let completedMilestones = 0;
 
-    activeRoadmap.forEach(stage => {
-      (stage.milestones || []).forEach(m => {
+    activeRoadmap.forEach((stage: any) => {
+      (stage.milestones || []).forEach((m: any) => {
         totalMilestones++;
         if (m.completed) completedMilestones++;
       });
@@ -307,32 +416,27 @@ export class BenchmarkingService {
       ? Math.round((completedMilestones / totalMilestones) * 100)
       : 0;
 
-    // 8. Overall Career Readiness Score
-    // Formula:
-    // - Skill Match (50%)
-    // - Domain Benchmarks Average (25%)
-    // - Portfolio Readiness (15%)
-    // - Roadmap Milestone Progress (10%)
-    const skillMatchRatio = Math.round((meetingSkills.length / totalExpectedSkills) * 100);
+    // 8. Overall Career Readiness Score for the Target Role
+    const skillMatchRatio = Math.round((expectedMatched.length / totalExpectedSkills) * 100);
     const domainAvg = Math.round(
       domainBenchmarks.reduce((acc, d) => acc + d.candidateScore, 0) / domainBenchmarks.length
     );
 
     const rawReadiness =
-      skillMatchRatio * 0.50 +
+      skillMatchRatio * 0.45 +
       domainAvg * 0.25 +
-      portfolioReadinessScore * 0.15 +
-      Math.max(percentComplete, 30) * 0.10;
+      portfolioReadinessScore * 0.20 +
+      Math.max(percentComplete, 25) * 0.10;
 
-    const overallReadiness = Math.min(Math.max(Math.round(rawReadiness), Math.max(skillMatchRatio, 8)), 98);
+    const overallReadiness = Math.min(Math.max(Math.round(rawReadiness), 12), 98);
 
     const readinessLevel: 'Job Ready' | 'Competitive' | 'Developing' =
       overallReadiness >= 80 ? 'Job Ready' : overallReadiness >= 65 ? 'Competitive' : 'Developing';
 
     const candidatePercentile =
-      overallReadiness >= 88 ? 'Top 10%' : overallReadiness >= 80 ? 'Top 15%' : overallReadiness >= 70 ? 'Top 25%' : 'Top 45%';
+      overallReadiness >= 85 ? 'Top 10%' : overallReadiness >= 75 ? 'Top 15%' : overallReadiness >= 65 ? 'Top 25%' : overallReadiness >= 50 ? 'Average (50th)' : 'Developing (60th)';
 
-    // 9. Clear Actionable Areas to Improve
+    // 9. Clear Actionable Areas to Improve dynamically tailored to Target Role
     const clearAreasToImprove: ICareerBenchmarkResult['clearAreasToImprove'] = [];
 
     // Top missing high-priority skills
@@ -344,8 +448,8 @@ export class BenchmarkingService {
         category: 'Skill Gap',
         priority: 'high',
         title: `Bridge High-Demand ${targetRole} Missing Skills: ${top3}`,
-        impactScore: '+12% Career Readiness',
-        actionableStep: `Focus on mastering ${top3} to satisfy the primary keyword and competency thresholds expected by hiring teams.`,
+        impactScore: '+14% Career Readiness',
+        actionableStep: `Focus on mastering ${top3} to satisfy the primary keyword and competency thresholds expected by hiring teams for ${targetRole}.`,
         suggestedActionLink: `/recommendations?role=${encodeURIComponent(targetRole)}`
       });
     }
@@ -359,8 +463,8 @@ export class BenchmarkingService {
         category: 'Portfolio Project',
         priority: 'high',
         title: `Build Practical Project: ${targetProj.recommendedProjectTitle}`,
-        impactScore: '+8% Portfolio Proof',
-        actionableStep: `Implement deliverables for ${targetProj.targetSkill} (${targetProj.estimatedHours} hrs) to demonstrate tangible production architecture to employers.`,
+        impactScore: '+9% Portfolio Proof',
+        actionableStep: `Implement deliverables for ${targetProj.targetSkill} (${targetProj.estimatedHours} hrs) to demonstrate tangible production architecture to employers for ${targetRole}.`,
         suggestedActionLink: `/roadmap?role=${encodeURIComponent(targetRole)}`
       });
     }
@@ -373,7 +477,7 @@ export class BenchmarkingService {
         category: 'Roadmap Milestone',
         priority: 'medium',
         title: `Progress Through Stage ${activeStage.stage}: ${activeStage.title}`,
-        impactScore: '+5% Milestone Standing',
+        impactScore: '+6% Milestone Standing',
         actionableStep: `Advance through the structured 3-stage career roadmap milestones designed for ${targetRole}.`,
         suggestedActionLink: `/roadmap?role=${encodeURIComponent(targetRole)}`
       });
@@ -384,9 +488,9 @@ export class BenchmarkingService {
       area: 'Portfolio Improvement Simulator',
       category: 'Skill Gap',
       priority: 'medium',
-      title: 'Simulate Career Impact of Certifications & Skills (Phase 4A)',
+      title: `Simulate Career Impact of Certifications & Skills for ${targetRole}`,
       impactScore: '+15% Projected Uplift',
-      actionableStep: `Use the interactive simulator to model the exact score boost of adding certifications, projects, or missing skills without changing your profile.`,
+      actionableStep: `Use the interactive simulator to model the exact score boost of adding certifications, projects, or missing skills for ${targetRole}.`,
       suggestedActionLink: `/simulator?role=${encodeURIComponent(targetRole)}`
     });
 

@@ -14,7 +14,7 @@ import { JobAnalysis } from '../models/JobAnalysis.js';
 import { User } from '../models/User.js';
 
 // Standard market taxonomy definition for career roles
-const ROLE_TAXONOMY: Record<string, { skills: string[]; category: string; description: string }> = {
+export const ROLE_TAXONOMY: Record<string, { skills: string[]; category: string; description: string }> = {
   'Data Analyst': {
     skills: ['Python', 'SQL', 'Power BI', 'Data Visualization', 'Tableau', 'Excel', 'Statistics', 'Pandas', 'EDA'],
     category: 'Data & Analytics',
@@ -371,10 +371,12 @@ export class RecommendationService {
   /**
    * Retrieves or computes recommendations for the user
    */
-  static async getRecommendations(userId: string): Promise<ICareerRecommendation> {
-    const existing = await CareerRecommendation.findOne({ userId }).sort({ updatedAt: -1 });
+  static async getRecommendations(userId: string, targetRoleParam?: string): Promise<ICareerRecommendation> {
+    let existing = await CareerRecommendation.findOne({ userId }).sort({ updatedAt: -1 });
     if (existing) {
       let needsSave = false;
+
+      // Ensure all recommended roles have blueprints
       for (const r of existing.recommendedRoles) {
         if (!r.roadmap || r.roadmap.length === 0) {
           r.roadmap = RecommendationService.generateRoleRoadmap(
@@ -391,21 +393,44 @@ export class RecommendationService {
           needsSave = true;
         }
       }
+
+      // If targetRoleParam was requested, synchronize active target role
+      if (targetRoleParam && targetRoleParam.trim()) {
+        const cleanTarget = targetRoleParam.trim();
+        const matchedRole = existing.recommendedRoles.find(
+          r => r.role.toLowerCase() === cleanTarget.toLowerCase()
+        );
+
+        if (matchedRole) {
+          if (existing.targetRole !== matchedRole.role) {
+            existing.targetRole = matchedRole.role;
+            existing.overallReadiness = matchedRole.matchPercentage;
+            if (matchedRole.skillGaps && matchedRole.skillGaps.length > 0) {
+              existing.skillGaps = matchedRole.skillGaps;
+            }
+            if (matchedRole.roadmap && matchedRole.roadmap.length > 0) {
+              existing.roadmap = matchedRole.roadmap;
+            }
+            needsSave = true;
+          }
+        }
+      }
+
       if (needsSave) {
         existing.markModified('recommendedRoles');
         await existing.save();
       }
       return existing;
     }
-    return await this.generateRecommendations(userId);
+    return await this.generateRecommendations(userId, targetRoleParam);
   }
 
   /**
    * Generates fresh recommendations based on user's Phase 2B skills and Phase 2C job matches
    */
-  static async generateRecommendations(userId: string): Promise<ICareerRecommendation> {
+  static async generateRecommendations(userId: string, targetRoleParam?: string): Promise<ICareerRecommendation> {
     const user = await User.findById(userId);
-    const targetRole = (user?.targetRoles && user.targetRoles[0]) || 'Data Analyst';
+    const targetRole = targetRoleParam?.trim() || (user?.targetRoles && user.targetRoles[0]) || 'Full Stack Developer';
 
     // 1. Gather all candidate skills from SkillEvidence and Resume
     const skillEvidences = await SkillEvidence.find({ userId });

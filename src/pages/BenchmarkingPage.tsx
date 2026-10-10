@@ -43,7 +43,9 @@ export const BenchmarkingPage: React.FC = () => {
 
   const [benchmark, setBenchmark] = useState<ICareerBenchmarkResult | null>(null);
   const [recommendations, setRecommendations] = useState<CareerRecommendationRecord | null>(null);
-  const [selectedRole, setSelectedRole] = useState<string>(roleFromUrl || '');
+  const [selectedRole, setSelectedRole] = useState<string>(
+    () => roleFromUrl || (typeof window !== 'undefined' ? localStorage.getItem('careerlens_selected_target_role') || '' : '')
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,24 +63,23 @@ export const BenchmarkingPage: React.FC = () => {
   const fetchData = async (roleName?: string) => {
     try {
       setError(null);
-      const recRes = await apiClient.get<CareerRecommendationRecord>('/recommendations');
-      const recData = recRes.data;
-      setRecommendations(recData);
-
       const targetRoleToUse =
         roleName ||
+        searchParams.get('role') ||
         selectedRole ||
-        roleFromUrl ||
-        recData?.targetRole ||
-        (recData?.recommendedRoles && recData.recommendedRoles[0]?.role) ||
+        (typeof window !== 'undefined' ? localStorage.getItem('careerlens_selected_target_role') : null) ||
         'Full Stack Developer';
 
       setSelectedRole(targetRoleToUse);
 
-      const benchRes = await apiClient.get<ICareerBenchmarkResult>(
-        `/recommendations/benchmark?role=${encodeURIComponent(targetRoleToUse)}`
-      );
+      const [recRes, benchRes] = await Promise.all([
+        apiClient.get<CareerRecommendationRecord>(`/recommendations?role=${encodeURIComponent(targetRoleToUse)}`),
+        apiClient.get<ICareerBenchmarkResult>(`/recommendations/benchmark?role=${encodeURIComponent(targetRoleToUse)}`)
+      ]);
 
+      if (recRes.data) {
+        setRecommendations(recRes.data);
+      }
       if (benchRes.data) {
         setBenchmark(benchRes.data);
       }
@@ -92,13 +93,22 @@ export const BenchmarkingPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData(roleFromUrl || undefined);
-  }, [roleFromUrl]);
+    const roleParam = searchParams.get('role') || localStorage.getItem('careerlens_selected_target_role');
+    if (roleParam) {
+      setSelectedRole(roleParam);
+      if (!searchParams.get('role')) {
+        setSearchParams({ role: roleParam });
+      }
+    }
+    fetchData(roleParam || undefined);
+  }, [searchParams.get('role')]);
 
   // Handle Role Selection change
   const handleRoleChange = async (newRole: string) => {
     setSelectedRole(newRole);
     setSearchParams({ role: newRole });
+    localStorage.setItem('careerlens_selected_target_role', newRole);
+    localStorage.setItem('careerlens_active_role', newRole);
     setRefreshing(true);
     setSimulatedSkills([]);
     setSimulatedProjects([]);
@@ -146,6 +156,37 @@ export const BenchmarkingPage: React.FC = () => {
     const cats = Array.from(new Set(benchmark.meetingSkills.map(s => s.category)));
     return ['All', ...cats];
   }, [benchmark]);
+
+  // Deduplicated role list for switcher
+  const availableBenchmarkRoles = useMemo(() => {
+    const rolesMap: Record<string, number | undefined> = {};
+    if (recommendations?.recommendedRoles) {
+      recommendations.recommendedRoles.forEach(r => {
+        rolesMap[r.role] = r.matchPercentage;
+      });
+    }
+    const defaultRoles = [
+      'Full Stack Developer',
+      'Data Analyst',
+      'Backend Engineer',
+      'Data Engineer',
+      'DevOps / Cloud Engineer',
+      'Machine Learning Engineer',
+      'Frontend Engineer'
+    ];
+    defaultRoles.forEach(r => {
+      if (rolesMap[r] === undefined) {
+        rolesMap[r] = undefined;
+      }
+    });
+    if (selectedRole && rolesMap[selectedRole] === undefined) {
+      rolesMap[selectedRole] = undefined;
+    }
+    return Object.entries(rolesMap).map(([role, matchPercentage]) => ({
+      role,
+      matchPercentage
+    }));
+  }, [recommendations, selectedRole]);
 
   if (loading) {
     return (
@@ -264,21 +305,11 @@ export const BenchmarkingPage: React.FC = () => {
             disabled={refreshing}
             className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 font-semibold focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
           >
-            {recommendations?.recommendedRoles?.map(r => (
-              <option key={r.role} value={r.role}>
-                {r.role} ({r.matchPercentage}% fit)
+            {availableBenchmarkRoles.map(({ role, matchPercentage }) => (
+              <option key={role} value={role}>
+                {role} {matchPercentage !== undefined ? `(${matchPercentage}% fit)` : ''}
               </option>
             ))}
-            {!recommendations?.recommendedRoles?.some(r => r.role === selectedRole) && (
-              <option value={selectedRole}>{selectedRole}</option>
-            )}
-            <option value="Full Stack Developer">Full Stack Developer</option>
-            <option value="DevOps / Cloud Engineer">DevOps / Cloud Engineer</option>
-            <option value="Data Analyst">Data Analyst</option>
-            <option value="Data Engineer">Data Engineer</option>
-            <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-            <option value="Backend Engineer">Backend Engineer</option>
-            <option value="Frontend Engineer">Frontend Engineer</option>
           </select>
 
           <button

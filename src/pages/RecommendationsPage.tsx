@@ -88,15 +88,25 @@ export const RecommendationsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
+  const [selectedRoleName, setSelectedRoleName] = useState<string>(
+    () => searchParams.get('role') || (typeof window !== 'undefined' ? localStorage.getItem('careerlens_selected_target_role') || '' : '')
+  );
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = async (roleQuery?: string) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiClient.get<CareerRecommendationRecord>('/recommendations');
+      const activeRole = roleQuery || selectedRoleName || searchParams.get('role') || localStorage.getItem('careerlens_selected_target_role');
+      const endpoint = activeRole
+        ? `/recommendations?role=${encodeURIComponent(activeRole)}`
+        : '/recommendations';
+
+      const res = await apiClient.get<CareerRecommendationRecord>(endpoint);
       if (res.data) {
         setData(res.data);
+        if (!selectedRoleName && res.data.targetRole) {
+          setSelectedRoleName(res.data.targetRole);
+        }
       }
     } catch (err: any) {
       console.error('Failed to load recommendations:', err);
@@ -123,42 +133,39 @@ export const RecommendationsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchRecommendations();
-  }, []);
-
-  // Sync selectedRoleIndex with query param or localStorage
-  useEffect(() => {
-    if (data?.recommendedRoles && data.recommendedRoles.length > 0) {
-      const roleParam = searchParams.get('role') || localStorage.getItem('careerlens_selected_target_role');
-      if (roleParam) {
-        const foundIndex = data.recommendedRoles.findIndex(
-          r => r.role.toLowerCase() === roleParam.toLowerCase()
-        );
-        if (foundIndex !== -1 && foundIndex !== selectedRoleIndex) {
-          setSelectedRoleIndex(foundIndex);
-        }
+    const roleParam = searchParams.get('role') || localStorage.getItem('careerlens_selected_target_role');
+    if (roleParam) {
+      setSelectedRoleName(roleParam);
+      if (!searchParams.get('role')) {
+        setSearchParams({ role: roleParam });
       }
     }
-  }, [data, searchParams]);
+    fetchRecommendations(roleParam || undefined);
+  }, [searchParams.get('role')]);
 
-  const handleRoleSelect = (idx: number, roleName: string) => {
-    setSelectedRoleIndex(idx);
+  const handleRoleSelect = (roleName: string) => {
+    setSelectedRoleName(roleName);
     setSearchParams({ role: roleName });
     localStorage.setItem('careerlens_selected_target_role', roleName);
+    localStorage.setItem('careerlens_active_role', roleName);
   };
 
-  // Dynamically determine selectedRole based on searchParams, localStorage, or selectedRoleIndex
+  // Dynamically resolve active selected role object from recommendedRoles
   const selectedRole = useMemo(() => {
     if (!data?.recommendedRoles || data.recommendedRoles.length === 0) return null;
-    const roleParam = searchParams.get('role') || (typeof window !== 'undefined' ? localStorage.getItem('careerlens_selected_target_role') : null);
-    if (roleParam) {
+    const currentTarget =
+      selectedRoleName ||
+      searchParams.get('role') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('careerlens_selected_target_role') : null);
+
+    if (currentTarget) {
       const match = data.recommendedRoles.find(
-        r => r.role.trim().toLowerCase() === roleParam.trim().toLowerCase()
+        r => r.role.trim().toLowerCase() === currentTarget.trim().toLowerCase()
       );
       if (match) return match;
     }
-    return data.recommendedRoles[selectedRoleIndex] || data.recommendedRoles[0];
-  }, [data, searchParams, selectedRoleIndex]);
+    return data.recommendedRoles[0];
+  }, [data, selectedRoleName, searchParams]);
 
   // Dynamically compute/retrieve the skill gaps strictly for the currently selected role
   const activeRoleSkillGaps: ISkillGap[] = useMemo(() => {
@@ -211,6 +218,12 @@ export const RecommendationsPage: React.FC = () => {
     );
   }
 
+  // Dynamic values for header and cards
+  const displayRoleTitle = selectedRole?.role || data?.targetRole || 'Target Career Role';
+  const displayReadinessScore = selectedRole?.matchPercentage ?? data?.overallReadiness ?? 75;
+  const displayTargetGapsCount = selectedRole?.missingSkills?.length ?? activeRoleSkillGaps.length;
+  const displayAlternatePathsCount = Math.max((data?.recommendedRoles?.length || 1) - 1, 0);
+
   return (
     <div className="space-y-6 pb-12 font-sans">
       {/* Top Header */}
@@ -255,7 +268,7 @@ export const RecommendationsPage: React.FC = () => {
             Target Role Alignment
           </span>
           <h2 className="text-2xl font-black text-white tracking-tight">
-            {data?.targetRole || 'Target Career Role'}
+            {displayRoleTitle}
           </h2>
           <p className="text-xs text-emerald-100 leading-relaxed">
             Synthesized by correlating your extracted resume skills, verified GitHub repositories, and latest job compatibility matches.
@@ -265,12 +278,12 @@ export const RecommendationsPage: React.FC = () => {
         <div className="flex items-center gap-4 bg-white/10 p-4 rounded-2xl border border-white/15 relative z-10 shrink-0">
           <div className="text-center">
             <span className="text-[10px] uppercase font-bold text-emerald-200">Overall Readiness</span>
-            <div className="text-3xl font-black text-white">{data?.overallReadiness || 75}%</div>
+            <div className="text-3xl font-black text-white">{displayReadinessScore}%</div>
           </div>
           <div className="h-10 w-px bg-white/20" />
           <div className="text-left text-[11px] text-emerald-100 space-y-0.5">
-            <p className="font-bold text-white">{data?.skillGaps?.length || 0} Target Gaps</p>
-            <p className="text-emerald-200">{data?.recommendedRoles?.length || 0} Alternate Paths</p>
+            <p className="font-bold text-white">{displayTargetGapsCount} Target Gaps</p>
+            <p className="text-emerald-200">{displayAlternatePathsCount} Alternate Paths</p>
           </div>
         </div>
       </div>
@@ -286,8 +299,8 @@ export const RecommendationsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(data?.recommendedRoles || []).map((recRole, idx) => {
-            const isSelected = selectedRoleIndex === idx;
+          {(data?.recommendedRoles || []).map((recRole) => {
+            const isSelected = selectedRole?.role.toLowerCase() === recRole.role.toLowerCase();
             const pct = recRole.matchPercentage;
             const badgeColor =
               pct >= 75
@@ -299,7 +312,7 @@ export const RecommendationsPage: React.FC = () => {
             return (
               <div
                 key={recRole.role}
-                onClick={() => handleRoleSelect(idx, recRole.role)}
+                onClick={() => handleRoleSelect(recRole.role)}
                 className={`p-5 rounded-2xl border transition cursor-pointer flex flex-col justify-between space-y-3 ${
                   isSelected
                     ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'

@@ -7,7 +7,8 @@ import { sendSuccess, sendError } from '../utils/apiResponse.js';
 export class RecommendationController {
   static async getRecommendations(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const rec = await RecommendationService.getRecommendations(req.user!.userId);
+      const roleName = (req.query.role as string) || (req.body?.role as string);
+      const rec = await RecommendationService.getRecommendations(req.user!.userId, roleName);
       sendSuccess(res, 'Career recommendations retrieved successfully', rec);
     } catch (error: any) {
       sendError(res, error.message || 'Failed to retrieve recommendations', null, 500);
